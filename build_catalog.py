@@ -407,13 +407,21 @@ card("Goblin Bomb Carrier", S, 2, "lava", "uncommon", "melee", True,
      "May be Set face down. If this Unit is destroyed by an opponent's card, add "
      "1 Magma Mine from your deck to your hand.", "death_fetch_mine")
 card("Flesh Collector", S, 2, "dungeon", "epic", "melee", True,
-     "Wields a battle axe (d8). Cleave on a combat win.", "cleave")
+     "Cleave - when this Unit wins a combat roll, also destroy 1 enemy Unit "
+     "orthogonally adjacent to the Unit it defeated.",
+     "cleave")
 
 # --- Tier 3 (6 names; Gargoyle prints x2 for the 7th slot) -------------
 card("Gargoyle", S, 3, "dungeon", "uncommon", "melee", True, "", "vanilla")
+# DESIGN NOTES (not printed): deliberately has NO Taunt - the intent was for it
+# to sit "perched with two Gargoyles" as a presence, not a hard wall.
+# OPEN CONFLICT: the source doc says this rolls a d8, but it is Tier 3 and in
+# this game the Tier IS the die (T3 = d12). Either it is really Tier 2, or it is
+# a deliberate exception to the one rule the whole combat system rests on.
+# Left as Tier 3 / d12 until AJ rules on it.
 card("Dungeon Door", S, 3, "dungeon", "uncommon", "melee", False,
-     "This Unit and adjacent Units you control add +1 to their rolls. Any Dweller "
-     "Type. Rolls a d8. Deliberately has no Taunt.", "aura_plus1_any_incl_self")
+     "This Unit and adjacent Units you control add +1 to their rolls, "
+     "regardless of Dweller Type.", "aura_plus1_any_incl_self")
 card("Charnel Warden", S, 3, "dungeon", "uncommon", "ranged", True,
      "Once per turn during your Recruitment Phase: banish 1 card from your Discard "
      "pile to Special Summon 1 Zombie Token.", "banish_for_zombie")

@@ -1016,7 +1016,7 @@
   "rarity": "epic",
   "attack": "melee",
   "movable": true,
-  "skill": "Wields a battle axe (d8). Cleave on a combat win.",
+  "skill": "Cleave - when this Unit wins a combat roll, also destroy 1 enemy Unit orthogonally adjacent to the Unit it defeated.",
   "fx": "cleave",
   "status": "final",
   "art_note": "Lean hunched emaciated zombie golem stitched from corpses, tattered leather, dragging a big battle axe. Necromancer-conscript, not the bulky zombie trope."
@@ -1044,7 +1044,7 @@
   "rarity": "uncommon",
   "attack": "melee",
   "movable": false,
-  "skill": "This Unit and adjacent Units you control add +1 to their rolls. Any Dweller Type. Rolls a d8. Deliberately has no Taunt.",
+  "skill": "This Unit and adjacent Units you control add +1 to their rolls, regardless of Dweller Type.",
   "fx": "aura_plus1_any_incl_self",
   "status": "final",
   "art_note": "Ornate dungeon door/archway, part of the back-of-dungeon wall lineup."
