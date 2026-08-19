@@ -923,27 +923,27 @@ function stopMusic(){
   setTimeout(()=>{ if(dying){ try{ dying.stop(); }catch(e){} } },450);
   stopProc(); MUS_MODE=null;
 }
-/* Decode the battle track quietly in the background as soon as a game opens,
-   so the Battle Phase does not begin with a second of silence while a 2.5 MB
-   file downloads and decodes. */
+/* Decode the battle track in the background from the very first click, so it
+   is ready long before anyone presses Battle. It is 2.5 MB; loading it only
+   when the match starts would open every game with a gap. */
 function warmBattleTrack(){ if(MUS_ON && !BUF.battle) loadTrack("battle"); }
 
-/* Calm covers the menu and the deck builder, battle covers the Battle
-   Phase. startMusic no-ops when the mode has not changed, so this is safe
-   to call from anywhere. */
+/* Calm covers the menu and the deck builder. The moment you are at a board -
+   Battle against an NPC or the Test Bench, either one - the battle track runs
+   and keeps running for the whole match. It no longer follows the phase,
+   because ducking back to calm every Recruitment Phase broke the tension.
+   startMusic no-ops when the mode has not changed, so this is safe to call
+   from anywhere, as often as you like. */
 function musicScene(){
   if(!MUS_ON) return;
-  if(SCREEN==="game"){
-    if(typeof G!=="undefined" && G && !G.over) return startMusic(G.phase===2?"battle":"calm");
-    return;
-  }
-  startMusic("calm");
+  startMusic(SCREEN==="game" ? "battle" : "calm");
 }
 /* First gesture unblocks audio - kick whatever should be playing. */
 addEventListener("pointerdown",function once(){
   removeEventListener("pointerdown",once);
   ac();
   const m=MUS_MODE; MUS_MODE=null; if(m) startMusic(m); else musicScene();
+  setTimeout(warmBattleTrack, 1200);       // after the menu track is up
 });
 
 /* ---- fallback: two loops built from a scale, not a recording ------- */
@@ -1490,7 +1490,7 @@ function newGame(d1,d2,names,npc){
   say("h",`--- P1, turn 1 ---`);
   say("d","the first player skips their first Battle Phase");
   drawPhase();
-  show("game"); fxRest(); warmBattleTrack(); render();
+  show("game"); fxRest(); render();
 }
 function startBattle(){
   const a=STORE.active&&STORE.decks[STORE.active];
@@ -1608,7 +1608,6 @@ function drawPhase(){
   sfx("draw");
   say("d",`draw — deck ${P.deck.length}`);
   G.phase=1;
-  startMusic("calm");
   startOfRecruitment();
 }
 
@@ -1633,7 +1632,6 @@ function startOfRecruitment(){
 function toBattle(){
   G.phase=2; G.mode=null; G.sel=null;
   if(G.turn===1&&G.cur===1){ say("r","Battle Phase SKIPPED — first player cannot attack on turn one."); return endTurn(); }
-  startMusic("battle");
   say("h","-- Battle Phase --");
 }
 function endTurn(){
@@ -2137,7 +2135,7 @@ function rematch(){
   $("gameover").classList.remove("on");
   if(LAST_SETUP) newGame(LAST_SETUP.d1, LAST_SETUP.d2, LAST_SETUP.names, LAST_SETUP.npc);
 }
-function toMenu(){ stopMusic(); $("gameover").classList.remove("on"); show("start"); }
+function toMenu(){ $("gameover").classList.remove("on"); show("start"); }   // show() switches the track
 window.rematch=rematch; window.toMenu=toMenu;
 
 /* ===================================================================
