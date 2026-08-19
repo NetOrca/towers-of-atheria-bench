@@ -204,6 +204,34 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
   position:relative;font-size:.86em}
 .hcard:hover{transform:translateY(-3px)}
 .hcard.picked{outline:2px solid var(--gold)}
+
+/* THE HAND FANS. There is no maximum hand size in this game, so a hand can
+   grow past the width of the bar. Rather than hiding cards behind a scroll
+   nobody notices, the cards overlap like a real hand and the one you point
+   at lifts clear of its neighbours - which also uncovers its buttons, since
+   later cards paint over earlier ones. Never overlaps more than 55% of a
+   card, so the name and Tier always stay readable. */
+#hand.lap .hcard + .hcard{margin-left:var(--handlap,0px)}
+#hand.lap .hcard{transition:transform .13s ease, margin .13s ease}
+#hand.lap .hcard:hover,
+#hand.lap .hcard:focus-within,
+#hand.lap .hcard.open,
+#hand.lap .hcard.picked{z-index:40;transform:translateY(-12px);
+  box-shadow:0 12px 28px #000c;border-color:var(--gold)}
+/* the card after the lifted one slides right so nothing clips its buttons */
+#hand.lap .hcard:hover + .hcard,
+#hand.lap .hcard.open + .hcard{margin-left:4px}
+
+/* only when even a full fan will not fit does it become draggable */
+#hand.scrolls{cursor:grab}
+#hand.scrolls.dragging{cursor:grabbing;scroll-behavior:auto}
+#handWrap{position:relative;width:100%;max-width:min(100%,1100px)}
+#handWrap.more::after{content:"";position:absolute;top:0;right:0;bottom:0;width:38px;
+  pointer-events:none;border-radius:0 3px 3px 0;
+  background:linear-gradient(90deg,#0000,var(--panel2))}
+#handCount{position:absolute;top:-.85em;right:.6em;z-index:5;
+  font-family:var(--ui);font-size:.72em;letter-spacing:.08em;color:#b8a887;
+  background:var(--panel);border:1px solid var(--edge);border-radius:2em;padding:.1em .7em}
 .hcard .hn{font-weight:700;line-height:1.15;font-size:1.02em;padding-right:1.7em;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .hcard .hm{font-size:.86em;color:#6a5c42}
@@ -685,7 +713,7 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
       </div>
       <div id="zones"></div>
       <div id="selbar"></div>
-      <div id="hand"></div>
+      <div id="handWrap"><div id="handCount"></div><div id="hand"></div></div>
     </div>
     <div id="side2">
       <div id="log"></div>
@@ -3303,6 +3331,12 @@ function render(){
   // synchronous: requestAnimationFrame never fires in a background tab, so a
   // game loaded unfocused would keep the fallback size forever.
   fitBoard();
+  // AFTER fitBoard - the hand bar's width is not settled until the board has
+  // taken its share, and fanning against a stale width under-overlaps.
+  fitHand();
+  // and once more on the next frame, for the case where the bar was still
+  // settling. Harmless when nothing changed - fitHand is idempotent.
+  requestAnimationFrame(fitHand);
 }
 function renderHand(){
   const h=$("hand"); h.innerHTML="";
@@ -3343,6 +3377,99 @@ function renderHand(){
   }
   if(!P.hand.length) h.innerHTML='<div class="tag">hand empty</div>';
 }
+
+/* Work out how much the hand has to overlap to fit, MEASURED rather than
+   guessed, so it adapts to the window, the card size and the hand size. */
+function fitHand(){
+  const h=$("hand"), wrap=$("handWrap"); if(!h||!wrap) return;
+  const cards=[...h.querySelectorAll(".hcard")];
+  const cnt=$("handCount");
+  h.classList.remove("lap","scrolls");
+  wrap.classList.remove("more");
+  h.style.setProperty("--handlap","0px");
+  if(cnt) cnt.textContent = cards.length>1 ? cards.length+" CARDS" : "";
+  if(cards.length<2) return;
+
+  const cw=cards[0].getBoundingClientRect().width;
+  const gap=parseFloat(getComputedStyle(h).gap)||8;
+  const maxShift=cw*0.55 + gap;                 // never cover more than 55% of a card
+
+  /* Derived from card width and count, NOT from scrollWidth. Reading
+     scrollWidth in the same tick as a custom-property change returns a stale
+     number in Chrome, which made this under-overlap and then wrongly claim it
+     needed dragging. Card width and count cannot go stale. */
+  const cs=getComputedStyle(h);
+  const natural=cards.length*cw + (cards.length-1)*gap;
+  /* getBoundingClientRect, NOT clientWidth. During render the hand has not yet
+     been constrained to its max-width and clientWidth reports the unclamped
+     value (~1788 instead of 1100), which made the fan barely overlap at all.
+     getBoundingClientRect forces the layout flush and returns the truth. */
+  const box=h.getBoundingClientRect().width;
+  const avail=box - (parseFloat(cs.paddingLeft)||0) - (parseFloat(cs.paddingRight)||0)
+                  - (parseFloat(cs.borderLeftWidth)||0) - (parseFloat(cs.borderRightWidth)||0);
+  if(natural<=avail+1) return;                  // they already fit; leave it alone
+
+  const want=(natural-avail)/(cards.length-1);  // shift needed to fit them all
+  const shift=Math.min(want, maxShift);
+  h.style.setProperty("--handlap",(-shift)+"px");   // scoped to the hand, not :root
+  h.classList.add("lap");
+  if(want>maxShift){ h.classList.add("scrolls"); wrap.classList.add("more"); }
+}
+addEventListener("resize", ()=>{ if(SCREEN==="game") fitHand(); });
+
+/* A ResizeObserver is the only timing-proof way to do this. Every attempt to
+   measure the hand during render() read a width the browser had not settled
+   yet - clientWidth said 1788 when the bar was really 1100 - so the fan came
+   out barely overlapped. The observer fires AFTER layout with the real
+   content box, so the numbers cannot be stale. Changing child margins does
+   not resize the hand itself, so this cannot loop. */
+if(window.ResizeObserver){
+  let busy=false;
+  new ResizeObserver(()=>{
+    if(busy) return;
+    busy=true; fitHand(); busy=false;
+  }).observe($("hand"));
+}
+
+/* Tap-to-lift for touch, where there is no hover. */
+$("hand").addEventListener("click", e=>{
+  const card=e.target.closest(".hcard"); if(!card) return;
+  if(e.target.closest(".bigbtn")) return;                    // let buttons act
+  const was=card.classList.contains("open");
+  $("hand").querySelectorAll(".hcard.open").forEach(x=>x.classList.remove("open"));
+  card.classList.toggle("open", !was);
+});
+
+/* Drag to scroll, but only when the fan alone cannot fit the hand. Pointer
+   events so one code path covers mouse and touch. */
+(function dragScroll(){
+  const h=$("hand"); if(!h) return;
+  let down=false, startX=0, startL=0, moved=0;
+  h.addEventListener("pointerdown", e=>{
+    if(!h.classList.contains("scrolls")) return;
+    if(e.target.closest(".bigbtn")) return;
+    down=true; moved=0; startX=e.clientX; startL=h.scrollLeft;
+    h.classList.add("dragging");
+  });
+  h.addEventListener("pointermove", e=>{
+    if(!down) return;
+    const dx=e.clientX-startX; moved=Math.max(moved,Math.abs(dx));
+    h.scrollLeft=startL-dx;
+    if(moved>4) e.preventDefault();
+  });
+  const up=()=>{ down=false; h.classList.remove("dragging"); };
+  h.addEventListener("pointerup", up);
+  h.addEventListener("pointercancel", up);
+  h.addEventListener("pointerleave", up);
+  /* a drag must not also count as a click on the card underneath */
+  h.addEventListener("click", e=>{ if(moved>4){ e.stopPropagation(); e.preventDefault(); moved=0; } }, true);
+  /* a plain wheel scrolls the hand sideways - there is nothing to scroll vertically */
+  h.addEventListener("wheel", e=>{
+    if(!h.classList.contains("scrolls")) return;
+    if(Math.abs(e.deltaY)<=Math.abs(e.deltaX)) return;
+    h.scrollLeft += e.deltaY; e.preventDefault();
+  }, {passive:false});
+})();
 function renderLog(){
   const l=$("log");
   l.innerHTML=G.log.slice(-160).map(([c,t])=>`<div class="l-${c||"d"}">${esc(t)}</div>`).join("");
