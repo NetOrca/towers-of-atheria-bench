@@ -369,13 +369,40 @@ const SIMULATED = new Set([...Object.keys(AURA),"vanilla","token",
       artifact, so persistence here is correct and expected)
    =================================================================== */
 const LS="toa_decks_v2";
+
+/* Some browsers refuse localStorage for file:// pages entirely (Opera GX is
+   stricter than Chrome here). The game must still be fully playable in that
+   case - decks just live for the session. Never block startup with an alert;
+   a page that greets you with a popup reads as broken. */
+let STORAGE_OK = (function(){
+  try{ localStorage.setItem("__toa_probe","1"); localStorage.removeItem("__toa_probe"); return true; }
+  catch(e){ return false; }
+})();
+
 let STORE = load();
 function load(){
-  try{ const o=JSON.parse(localStorage.getItem(LS)); if(o&&o.decks) return o; }catch(e){}
+  if(STORAGE_OK){
+    try{ const o=JSON.parse(localStorage.getItem(LS)); if(o&&o.decks) return o; }catch(e){}
+  }
   return {decks:{}, active:null};
 }
-function save(){ try{ localStorage.setItem(LS,JSON.stringify(STORE)); }catch(e){
-  alert("Could not save. Your browser may be blocking storage for local files."); } }
+function save(){
+  if(!STORAGE_OK) return;                 // in-memory only, already warned once
+  try{ localStorage.setItem(LS,JSON.stringify(STORE)); }
+  catch(e){ STORAGE_OK=false; storageNotice(); }
+}
+let NOTICED=false;
+function storageNotice(){
+  if(NOTICED) return; NOTICED=true;
+  const el=document.createElement("div");
+  el.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:80;"+
+    "background:#2c251b;border:1px solid #c9a227;color:#e8dcc0;padding:.7em 1.1em;border-radius:5px;"+
+    "font:14px system-ui,sans-serif;max-width:90vw;text-align:center;box-shadow:0 4px 18px #000a";
+  el.textContent="This browser will not save data for local files, so decks last only until you close the tab. "+
+                 "Everything else works normally.";
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),9000);
+}
 
 function defaultDecks(){
   // Curated from the collection, exactly as the design doc describes:
@@ -406,6 +433,7 @@ function defaultDecks(){
   }
 }
 defaultDecks();
+if(!STORAGE_OK) addEventListener("DOMContentLoaded",storageNotice);
 
 /* ===================================================================
    2. SCREENS
