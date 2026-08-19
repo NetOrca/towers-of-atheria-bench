@@ -138,10 +138,32 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .sq.p1side{border-bottom:2px solid rgba(63,111,168,.35)}
 .sq.p2side{border-top:2px solid rgba(180,118,44,.35)}
 .sq .lbl{position:absolute;bottom:1px;right:3px;font-size:.62em;color:#463d2e;font-family:var(--ui)}
-.sq.hi{outline:2px solid var(--good);outline-offset:-2px;cursor:pointer}
-.sq.hi-atk{outline:2px solid var(--bad);outline-offset:-2px;cursor:pointer}
-.sq.hi-twr{outline:2px dashed var(--gold);outline-offset:-2px;cursor:pointer}
-.sq.sel{outline:2px solid var(--gold);outline-offset:-2px}
+/* Legal-target highlighting.
+   These used to be a 2px outline on the SQUARE - but an attackable square is
+   occupied by an enemy card, which covered the outline almost completely. The
+   ring is now an overlay drawn ABOVE the unit, with a tinted fill and a slow
+   pulse, so the thing you most need to see is never hidden behind a card. */
+.sq.hi,.sq.hi-atk,.sq.hi-twr{cursor:pointer}
+.sq.hi::after,.sq.hi-atk::after,.sq.hi-twr::after{
+  content:"";position:absolute;inset:0;z-index:5;pointer-events:none;border-radius:2px;
+  animation:tgt 1.5s ease-in-out infinite}
+.sq.hi::after{box-shadow:inset 0 0 0 3px #6cbf63, inset 0 0 18px rgba(108,191,99,.42);
+  background:rgba(74,124,70,.16)}
+.sq.hi-atk::after{box-shadow:inset 0 0 0 3px #e0574a, inset 0 0 20px rgba(224,87,74,.5);
+  background:rgba(160,45,35,.2)}
+.sq.hi-twr::after{box-shadow:inset 0 0 0 3px var(--gold), inset 0 0 22px rgba(201,162,39,.5);
+  background:rgba(201,162,39,.16)}
+@keyframes tgt{0%,100%{opacity:.72}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){ .sq.hi::after,.sq.hi-atk::after,.sq.hi-twr::after{animation:none} }
+
+/* a word on the square so the ACTION is named, not just coloured */
+.tmark{position:absolute;z-index:6;bottom:2px;left:0;right:0;text-align:center;
+  font-family:var(--ui);font-weight:800;font-size:.62em;letter-spacing:.1em;
+  pointer-events:none;text-shadow:0 1px 3px #000,0 0 6px #000}
+.tmark.m{color:#a8e39b}.tmark.a{color:#ff9b8c}.tmark.t{color:#ffe08a}
+
+.sq.sel{outline:3px solid var(--gold);outline-offset:-3px;
+  box-shadow:0 0 16px rgba(201,162,39,.45) inset}
 .sq.drop{background:#2f3a28}
 
 .unit{width:calc(100% - 4px);height:calc(100% - 4px);border-radius:2px;
@@ -1355,6 +1377,8 @@ function render(){
     d.className=`sq z-${z.kind} ${z.own===1?"p1side":"p2side"}`;
     if(G.sel&&G.sel.r===r&&G.sel.c===c) d.classList.add("sel");
     const a=acts.find(x=>x.r===r&&x.c===c);
+    // NOTE: only set the class here. The label is appended further down,
+    // AFTER d.innerHTML is written - otherwise that assignment wipes it.
     if(a) d.classList.add(a.k==="attack"?"hi-atk":a.k==="tower"?"hi-twr":"hi");
     if(G.mode&&G.mode.t==="place"&&canSummonAt(r,c,G.cur)) d.classList.add("hi");
     if(z.kind==="tower") d.innerHTML=`<div style="color:var(--gold);font-weight:700;font-size:.8em">TOWER<br>${G.P[z.own].deck.length}</div>`;
@@ -1378,6 +1402,13 @@ function render(){
       const dd=G.deaths.find(x=>x.r===r&&x.c===c&&Date.now()-x.at<900);
       if(dd){ const g=document.createElement("div"); g.className="death";
               g.textContent="DESTROYED"; d.appendChild(g); }
+    }
+    if(a){
+      const nm=document.createElement("span");
+      nm.className="tmark "+(a.k==="attack"?"a":a.k==="tower"?"t":"m");
+      nm.textContent = a.k==="attack"?"ATTACK" : a.k==="tower"?"TOWER"
+                     : a.k==="ride"?"RIDE" : "MOVE";
+      d.appendChild(nm);
     }
     d.onclick=()=>cellClick(r,c);
     d.ondragover=e=>{ if(G.mode&&G.mode.t==="place"&&canSummonAt(r,c,G.cur)){e.preventDefault();d.classList.add("drop");} };
