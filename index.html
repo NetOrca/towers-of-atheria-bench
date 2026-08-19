@@ -73,8 +73,8 @@ button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 /* ============================== chrome =============================== */
 .bar{display:flex;align-items:center;gap:var(--pad);padding:var(--pad) calc(var(--pad)*1.5);
   background:var(--panel);border-bottom:1px solid #000;flex:0 0 auto;
-  /* room for the fixed audio dock, which sits over the top-left corner */
-  padding-left:5.6em}
+  /* room for the fixed audio dock; --dockw is measured at runtime */
+  padding-left:var(--dockw,5.6em)}
 .bar .grow{flex:1}
 .tbtn{font-family:var(--ui);font-size:.95em;padding:.62em 1.15em;min-height:2.6em;
   border:1px solid var(--edge);border-radius:4px;background:#2a2318;letter-spacing:.02em}
@@ -1177,44 +1177,70 @@ function rules(){
 }
 $("btnRules").onclick=rules;
 /* Music and effects toggle separately - plenty of people want one and not
-   the other, and a loop you cannot silence is worse than no loop at all. */
+   the other, and a loop you cannot silence is worse than no loop at all.
+   NOTE: savePref is declared before first use here on purpose. */
+function savePref(k,v){ try{ localStorage.setItem(k, String(v)); }catch(e){} }
+
+/* Restore previous choices before anything paints or plays. Someone who muted
+   last time should not get a fanfare the moment they open the page. */
+try{
+  const m=localStorage.getItem("toa_mus"), n=localStorage.getItem("toa_sfx");
+  if(m!==null) MUS_ON = m==="true";
+  if(n!==null) SFX_ON = n==="true";
+}catch(e){}
+
 function paintAudioBtns(){
   $("btnMus").classList.toggle("off", !MUS_ON);
   $("btnSfx").classList.toggle("off", !SFX_ON);
 }
-function toggleMus(){ MUS_ON=!MUS_ON; savePref("toa_mus",MUS_ON); function paintMixer(){
+function paintMixer(){
   $("musVol").value=Math.round(MUS_LEVEL*100); $("mvOut").textContent=Math.round(MUS_LEVEL*100)+"%";
   $("sfxVol").value=Math.round(SFX_LEVEL*100); $("svOut").textContent=Math.round(SFX_LEVEL*100)+"%";
 }
-$("btnMix").onclick=()=>{ $("mixer").classList.toggle("on"); if(SFX_ON) sfx("click"); };
+function toggleMus(){
+  MUS_ON=!MUS_ON; savePref("toa_mus",MUS_ON); paintAudioBtns();
+  if(!MUS_ON) stopMusic(); else musicScene();
+  if(SFX_ON) sfx("click");
+}
+function toggleSfx(){
+  SFX_ON=!SFX_ON; savePref("toa_sfx",SFX_ON); paintAudioBtns();
+  if(SFX_ON) sfx("click");
+}
+function toggleMixer(){
+  $("mixer").classList.toggle("on");
+  if(SFX_ON) sfx("click");
+}
+$("btnMus").onclick=toggleMus;
+$("btnSfx").onclick=toggleSfx;
+$("btnMix").onclick=toggleMixer;
 $("musVol").oninput=e=>{
   MUS_LEVEL=(+e.target.value)/100; savePref("toa_muslvl",MUS_LEVEL); paintMixer();
   if(MUS_ON && MUS_MODE) rampGain(musTarget(MUS_MODE), 0.08);   // hear it immediately
 };
 $("sfxVol").oninput=e=>{ SFX_LEVEL=(+e.target.value)/100; savePref("toa_sfxlvl",SFX_LEVEL); paintMixer(); };
 $("sfxVol").onchange=()=>{ if(SFX_ON) sfx("skill"); };          // audition the new level
-paintMixer();
-paintAudioBtns();
-  if(!MUS_ON) stopMusic(); else musicScene(); if(SFX_ON) sfx("click"); }
-function toggleSfx(){ SFX_ON=!SFX_ON; savePref("toa_sfx",SFX_ON); paintAudioBtns(); if(SFX_ON) sfx("click"); }
-$("btnMus").onclick=toggleMus;
-$("btnSfx").onclick=toggleSfx;
-/* Restore the previous choice. Someone who muted the music last time should
-   not have it start again the moment they open the page. */
-try{
-  const m=localStorage.getItem("toa_mus"), n=localStorage.getItem("toa_sfx");
-  if(m!==null) MUS_ON = m==="true";
-  if(n!==null) SFX_ON = n==="true";
-}catch(e){}
-/* NOT called save() - save() already persists the deck STORE, and a second
-   declaration would silently replace it and stop decks saving. */
-function savePref(k,v){ try{ localStorage.setItem(k, String(v)); }catch(e){} }
 addEventListener("keydown",e=>{
   if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA") return;
   if(e.key==="m"||e.key==="M") toggleMus();
   if(e.key==="n"||e.key==="N") toggleSfx();
 });
+paintMixer();
 paintAudioBtns();
+
+/* The dock is position:fixed over the top-left corner, so every bar has to
+   start clear of it. MEASURED, not a guessed em value - the dock grew from
+   two buttons to three and the hardcoded 5.6em stopped being enough, which
+   is the same mistake as the old hardcoded --chrome height. */
+function fitAudioDock(){
+  const d=$("audioDock"); if(!d) return;
+  const btns=[...d.children].filter(e=>e.classList.contains("tbtn"));
+  if(!btns.length) return;
+  const right=Math.ceil(btns[btns.length-1].getBoundingClientRect().right);
+  document.documentElement.style.setProperty("--dockw", (right+14)+"px");
+}
+fitAudioDock();
+addEventListener("resize", fitAudioDock);
+addEventListener("load", fitAudioDock);
 
 
 /* ---- stamps: same art as the printed card ------------------------- */
@@ -1973,7 +1999,13 @@ function npcResolvePrompts(){
     if(PICKZ){ pzPick(0); continue; }
     /* The opponent picks its own cost cards, otherwise a multi-select prompt
        sits open forever and the turn never ends. */
-    if(PICKN){ PICKN.chosen=[]; for(let i=0;i<PICKN.n;i++) PICKN.chosen.push(i); pnOk(); continue; }
+    if(PICKN){
+      /* Choose from the LEGAL indices only - a filtered chooser (e.g. Dungeon
+         Dwellers only) does not start at 0. */
+      const legal=(PICKN.only||G.P[PICKN.player][PICKN.zone].map((c,i)=>i)).slice();
+      PICKN.chosen=legal.slice(0,PICKN.n);
+      if(PICKN.chosen.length<PICKN.n){ pnCancel(); } else { pnOk(); }
+      continue; }
     if(window.bhGo && $("modal").classList.contains("on") &&
        /Bone Harvester/.test($("modal").textContent||"")){
       const n=Math.min(3,G.P[G.cur].hand.length); if(n){ bhGo(n); continue; }
@@ -2601,13 +2633,27 @@ function sovCancel(){ SOV_STATE=null; closeModal(); render(); }
 function sovPay(){
   const {me,banish,discard,mill}=SOV_STATE; const P=G.P[me];
   SOV_STATE=null; closeModal();
-  for(let i=0;i<banish  && P.disc.length;i++) P.banish.push(P.disc.pop());
-  for(let i=0;i<discard && P.hand.length;i++) P.disc.push(P.hand.splice(0,1)[0]);
-  for(let i=0;i<mill    && P.deck.length;i++) P.disc.push(P.deck.pop());
   const n=banish+discard+mill;
-  say("d",`  paid ${n} — banished ${banish}, discarded ${discard}, milled ${mill}`);
-  payAndSpawn(me,n,"Skeleton Knight Token",null);
-  render();
+  const finish=()=>{
+    for(let i=0;i<mill && P.deck.length;i++) P.disc.push(P.deck.pop());   // milling is off the top
+    say("d",`  paid ${n} — banished ${banish}, discarded ${discard}, milled ${mill}`);
+    payAndSpawn(me,n,"Skeleton Knight Token",null);
+    render();
+  };
+  /* Banishing and discarding are both choices. Milling is not - the rules
+     take milled cards off the top of the deck. */
+  const doDiscard=()=> discard
+    ? pickCards(`Charnel Sovereign — discard ${discard} from your hand`, me, "hand", discard,
+        "part of the cost", (got)=>{ if(!got) return render();
+          got.forEach(c=>P.disc.push(c)); finish(); })
+    : finish();
+  if(banish){
+    pickCards(`Charnel Sovereign — banish ${banish} Dungeon Dweller${banish>1?"s":""} from your Discard pile`,
+      me, "disc", banish, "part of the cost",
+      (got)=>{ if(!got) return render();
+        got.forEach(c=>P.banish.push(c)); doDiscard(); },
+      (c)=>c.dweller==="dungeon");
+  } else doDiscard();
 }
 window.sovAdd=sovAdd; window.sovPay=sovPay; window.sovCancel=sovCancel;
 
@@ -2683,20 +2729,32 @@ function pzPick(n){
    Costs that discard, banish or mill used to take whatever sat on top of
    the pile. That is a real decision the player was not being given. */
 let PICKN=null;
-function pickCards(title, player, zone, n, note, cb){
+const isNPC = p => (typeof NPC_ON!=="undefined") && NPC_ON && p===2;
+
+function pickCards(title, player, zone, n, note, cb, filter){
   const src=G.P[player][zone]||[];
-  if(src.length<=n){                       // no decision to make
-    const all=src.splice(0,src.length);
-    return cb(all);
+  const idx=src.map((c,i)=>i).filter(i=>!filter||filter(src[i]));
+  if(idx.length<=n){                       // no decision to make
+    const taken=idx.slice().sort((a,b)=>b-a).map(i=>src.splice(i,1)[0]).reverse();
+    return cb(taken);
   }
-  PICKN={title, player, zone, n, note, cb, chosen:[]};
+  /* When the chooser is the opponent AI it decides for itself, immediately -
+     a prompt aimed at the NPC during the human's turn would never be
+     answered, because the NPC only resolves prompts on its own turn. */
+  if(isNPC(player)){
+    const pool=idx.slice(), got=[];
+    for(let k=0;k<n && pool.length;k++) got.push(pool.splice(Math.random()*pool.length|0,1)[0]);
+    const taken=got.slice().sort((a,b)=>b-a).map(i=>src.splice(i,1)[0]).reverse();
+    return cb(taken);
+  }
+  PICKN={title, player, zone, n, note, cb, chosen:idx.slice(0,0), only:idx};
   drawPickN();
 }
 function drawPickN(){
   const P=PICKN; if(!P) return;
   const src=G.P[P.player][P.zone];
-  const list=src.map((c,i)=>{
-    const on=P.chosen.includes(i);
+  const list=(P.only||src.map((c,i)=>i)).map(i=>{
+    const c=src[i], on=P.chosen.includes(i);
     return zrow(c, `<button class="bigbtn${on?" go":""}" onclick="pnTog(${i})">${on?"✓":"pick"}</button>`)
       .replace('<div class="zrow">', `<div class="zrow${on?" sel":""}">`);
   }).join("");
@@ -2838,46 +2896,71 @@ function runActive(card, ctx){
       return true; }
 
     case "cavalry_self_summon": {
-      if(P.hand.length<2){ say("r","  you need 2 cards to discard"); return true; }
       const inHand = ctx && ctx.zone==="hand";
+      /* The card cannot be part of its own cost, so it is filtered out of the
+         chooser when it is sitting in hand. */
+      const payable = P.hand.filter(x=>!(inHand && x===card)).length;
+      if(payable<2){ say("r","  you need 2 other cards to discard"); return true; }
       pickSquare("choose an empty Barracks square",
         (r,c,u2)=>!u2 && canSummonAt(r,c,me),
-        (sel)=>{ if(!sel) return render();
-          for(let i=0;i<2;i++) P.disc.push(P.hand.splice(Math.random()*P.hand.length|0,1)[0]);
-          say("d","  discarded 2 cards as the cost");
-          let src=null;
-          const hi=P.hand.findIndex(x=>x.id===card.id);
-          if(hi>=0) src=P.hand.splice(hi,1)[0];
-          else { const di=P.disc.findIndex(x=>x.id===card.id);
-                 if(di>=0) src=P.disc.splice(di,1)[0]; }
-          if(!src){ say("r","  could not find the card"); return render(); }
-          const {r,c}=sel[0];
-          G.board[r][c]=unit(me,[src],{sick:true,tapped:true});
-          say("g",`  Special Summon ${src.name} to ${rcName(r,c)}`);
-          render(); });
+        (sel)=>{
+          if(!sel) return render();
+          pickCards("Undead Cavalry — discard 2 cards", me, "hand", 2,
+            "this is the cost of the Special Summon",
+            (paid)=>{
+              if(!paid) return render();
+              paid.forEach(c=>P.disc.push(c));
+              say("d",`  discarded ${paid.map(c=>c.name).join(" and ")} as the cost`);
+              let src=null;
+              const hi=P.hand.findIndex(x=>x.id===card.id);
+              if(hi>=0) src=P.hand.splice(hi,1)[0];
+              else { const di=P.disc.findIndex(x=>x.id===card.id);
+                     if(di>=0) src=P.disc.splice(di,1)[0]; }
+              if(!src){ say("r","  could not find the card"); return render(); }
+              const {r,c}=sel[0];
+              G.board[r][c]=unit(me,[src],{sick:true,tapped:true});
+              say("g",`  Special Summon ${src.name} to ${rcName(r,c)}`);
+              render();
+            },
+            (x)=>!(inHand && x===card));
+        });
       return true; }
 
     case "odd_snipe": {                       // Elvish Sniper
       const v=roll();
-      if(v%2===1){ const t=enemyUnits(foe===1?2:1).filter(x=>!x.u.fd);
-        const tg=enemyUnits(me)[0];
+      if(v%2===1){
+        /* The card does not say "random" - it says destroy 1 face-up enemy
+           Unit, so the Sniper's controller chooses which. */
         const list=unitsOf(foe).filter(x=>!x.u.fd);
-        if(list.length){ const pick=list[Math.random()*list.length|0];
-          say("g",`  ODD — destroys ${label(pick.u)}`); doKill(pick.r,pick.c,"sniped"); }
-        else say("r","  no face-up enemy Unit to destroy");
+        if(!list.length){ say("r","  no face-up enemy Unit to destroy"); return true; }
+        pickSquare("ODD — choose a face-up enemy Unit to destroy",
+          (r,c,u2)=>u2 && u2.own===foe && !u2.fd,
+          (sel)=>{ if(!sel) return render();
+            const {r,c}=sel[0];
+            say("g",`  ODD — destroys ${label(G.board[r][c])}`);
+            doKill(r,c,"sniped"); render(); });
       } else say("r","  even — nothing happens");
       return true; }
 
     case "paladin_even_odd": {                // Corrupted Paladin
       const v=roll();
-      if(v%2===0){ const list=unitsOf(foe);
-        if(list.length){ const pick=list[Math.random()*list.length|0];
-          say("g",`  EVEN — destroys ${label(pick.u)}`); doKill(pick.r,pick.c,"Corrupted Paladin"); }
-        else say("r","  no enemy Unit on the field");
+      if(v%2===0){
+        if(!unitsOf(foe).length){ say("r","  no enemy Unit on the field"); return true; }
+        pickSquare("EVEN — choose an enemy Unit to destroy",
+          (r,c,u2)=>u2 && u2.own===foe,
+          (sel)=>{ if(!sel) return render();
+            const {r,c}=sel[0];
+            say("g",`  EVEN — destroys ${label(G.board[r][c])}`);
+            doKill(r,c,"Corrupted Paladin"); render(); });
       } else {
-        if(F.disc.length){ F.banish.push(F.disc.pop());
-          say("g",`  ODD — banished ${F.banish[F.banish.length-1].name} from their Discard`); }
-        else say("r","  their Discard pile is empty");
+        if(!F.disc.length){ say("r","  their Discard pile is empty"); return true; }
+        /* Banishing from the OPPONENT'S Discard, but the Paladin's controller
+           is the one choosing, so the prompt belongs to `me`, not `foe`. */
+        pickCards("ODD — banish 1 card from your opponent's Discard pile",
+          foe, "disc", 1, "you choose; it leaves their Discard for good",
+          (got)=>{ if(!got) return render();
+            F.banish.push(got[0]);
+            say("g",`  ODD — banished ${got[0].name} from their Discard`); render(); });
       }
       return true; }
 
@@ -2898,11 +2981,24 @@ function runActive(card, ctx){
 
     case "catapult_d8_edict": {               // Wooden Catapult
       const v=roll();
-      if(v<=4){ const list=unitsOf(foe);
-        if(list.length){ const pick=list[Math.random()*list.length|0];
-          say("g",`  1-4 — opponent sends ${label(pick.u)} to the Discard`);
-          doKill(pick.r,pick.c,"Wooden Catapult"); }
-        else say("r","  they control no Units");
+      if(v<=4){
+        const list=unitsOf(foe);
+        if(!list.length){ say("r","  they control no Units"); return true; }
+        /* This one is not the activating player's choice - the card reads
+           "your opponent chooses 1 Unit they control". Against the AI it
+           decides for itself; in a two-player game the other player picks. */
+        if(isNPC(foe)){
+          const pick=list[Math.random()*list.length|0];
+          say("g",`  1-4 — they send ${label(pick.u)} to the Discard`);
+          doKill(pick.r,pick.c,"Wooden Catapult");
+        } else {
+          pickSquare(`1-4 — ${G.P[foe].name}: choose one of YOUR Units to discard`,
+            (r,c,u2)=>u2 && u2.own===foe,
+            (sel)=>{ if(!sel) return render();
+              const {r,c}=sel[0];
+              say("g",`  they send ${label(G.board[r][c])} to the Discard`);
+              doKill(r,c,"Wooden Catapult"); render(); });
+        }
       } else say("r","  5 or higher — nothing happens");
       return true; }
 
@@ -2923,11 +3019,13 @@ function runActive(card, ctx){
 
     case "cycle_two": {                       // Doe
       if(P.hand.length<2) { say("r","  not enough cards in hand"); return true; }
-      for(let i=0;i<2;i++) P.deck.push(P.hand.splice(Math.random()*P.hand.length|0,1)[0]);
-      for(let i=P.deck.length-1;i>0;i--){const j=Math.random()*(i+1)|0;
-        [P.deck[i],P.deck[j]]=[P.deck[j],P.deck[i]];}
-      for(let i=0;i<2&&P.deck.length;i++) P.hand.push(P.deck.pop());
-      say("g","  shuffled 2 back and drew 2"); return true; }
+      pickCards("Doe — shuffle 2 cards from your hand into your deck", me, "hand", 2,
+        "you draw 2 afterwards",
+        (got)=>{ if(!got) return render();
+          got.forEach(c=>P.deck.push(c)); shuffle(P.deck);
+          for(let i=0;i<2&&P.deck.length;i++) P.hand.push(P.deck.pop());
+          say("g","  shuffled 2 back and drew 2"); render(); });
+      return true; }
 
     case "recur_honor_to_deck": {
       pickFromZones("Return an Honor Dweller to your deck",
@@ -3013,19 +3111,23 @@ function runActive(card, ctx){
 
     case "spawn_squirrel_token": {            // Forest Maple
       if(!P.hand.length){ say("r","  your hand is empty"); return true; }
-      P.deck.push(P.hand.splice(0,1)[0]);
-      for(let i=P.deck.length-1;i>0;i--){const j=Math.random()*(i+1)|0;
-        [P.deck[i],P.deck[j]]=[P.deck[j],P.deck[i]];}
-      say("d","  shuffled a card back as the cost");
-      spawnToken(me,"Squirrel Token"); return true; }
+      pickCards("Forest Maple — shuffle 1 card from your hand into your deck", me, "hand", 1,
+        "this is the cost of the Squirrel Token",
+        (got)=>{ if(!got) return render();
+          P.deck.push(got[0]); shuffle(P.deck);
+          say("d",`  shuffled ${got[0].name} back as the cost`);
+          spawnToken(me,"Squirrel Token"); render(); });
+      return true; }
 
     case "aegis_mass_recur": {                // Aegis the Unbroken
       if(P.hand.length<5){ say("r","  you need 5 cards in hand — all or nothing"); return true; }
-      for(let i=0;i<5;i++) P.banish.push(P.hand.splice(Math.random()*P.hand.length|0,1)[0]);
-      const n=P.disc.length; P.deck.push(...P.disc.splice(0));
-      for(let i=P.deck.length-1;i>0;i--){const j=Math.random()*(i+1)|0;
-        [P.deck[i],P.deck[j]]=[P.deck[j],P.deck[i]];}
-      say("g",`  banished 5 from hand, returned ${n} cards from the Discard to the deck`);
+      pickCards("Aegis the Unbroken — banish 5 from your hand", me, "hand", 5,
+        "all or nothing: this returns every Unit in your Discard pile to your deck",
+        (got)=>{ if(!got) return render();
+          got.forEach(c=>P.banish.push(c));
+          const n=P.disc.length; P.deck.push(...P.disc.splice(0)); shuffle(P.deck);
+          say("g",`  banished 5 from hand, returned ${n} cards from the Discard to the deck`);
+          render(); });
       return true; }
   }
   return false;   // not simulated
