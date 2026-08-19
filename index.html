@@ -252,9 +252,10 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .spr{image-rendering:pixelated;display:block}
 .unit .spr{position:absolute;right:2px;bottom:2px;width:26px;height:26px;opacity:.95;
   filter:drop-shadow(0 1px 2px #0008);pointer-events:none}
-.hcard .spr{width:34px;height:34px;position:absolute;top:4px;right:4px;opacity:.9}
-.tile .spr{width:40px;height:40px;position:absolute;top:6px;right:38px}
-.sheet .spr{width:72px;height:72px;margin:.2em auto .4em}
+/* The tier badge owns the top-right corner. Sprites sit clear of it. */
+.hcard .spr{width:30px;height:30px;position:absolute;bottom:4px;right:5px;opacity:.92}
+.tile .spr{width:44px;height:44px;position:absolute;top:34px;right:8px;opacity:.95}
+.sheet .spr{width:96px;height:96px;margin:0 auto}
 .zrow .spr{width:24px;height:24px;flex:0 0 auto}
 
 /* big, phone-friendly action buttons — these are the game's real tutorial */
@@ -283,6 +284,25 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .bigbtn.phase:disabled{opacity:.4;cursor:default}
 
 .sheet{max-width:min(560px,94vw)}
+/* A card-shaped view, sprite dead centre, echoing the printed layout without
+   revealing any final art. */
+.cardview{background:linear-gradient(160deg,var(--parch),var(--parch2));color:#1a150f;
+  border:2px solid #14100a;border-radius:6px;padding:.7em .8em;margin:0 auto .8em;
+  max-width:300px;box-shadow:0 6px 20px #000a}
+.cvtop{display:flex;align-items:center;gap:.5em;font-family:var(--ui);font-size:.82em;
+  text-transform:uppercase;letter-spacing:.08em;color:#5c5039}
+.cvtier{background:#141009;color:#f2d97a;border:2px solid var(--gold);border-radius:50%;
+  width:2em;height:2em;display:grid;place-items:center;font-weight:800;font-size:.95em}
+.cvrar{width:.7em;height:.7em;transform:rotate(45deg);border:1px solid #1c1710}
+.cvdw{margin-left:auto;font-weight:700}
+.cvart{background:#efe7d3;border:1px solid #8d7c58;
+  border-radius:3px;margin:.6em 0;padding:.7em;display:grid;place-items:center;min-height:120px}
+.cvart .spr{width:96px;height:96px}
+.cvname{background:#efe7d3;border:1px solid #8d7c58;border-radius:3px;text-align:center;
+  font-weight:800;padding:.35em;font-size:1.05em}
+.cvfoot{display:flex;gap:.4em;margin-top:.45em;font-family:var(--ui);font-size:.8em}
+.cvfoot span{flex:1;background:#efe7d3;border:1px solid #8d7c58;border-radius:3px;
+  text-align:center;padding:.3em;text-transform:uppercase;letter-spacing:.05em}
 .sheet .stat{font-family:var(--ui);color:var(--dim);letter-spacing:.1em;
   text-transform:uppercase;font-size:.85em;margin:.2em 0 .8em}
 .sheet .txt{background:linear-gradient(160deg,var(--parch),var(--parch2));color:#1a150f;
@@ -597,7 +617,7 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
     <span class="tag" id="phaseTag"></span>
     <span class="grow"></span>
     <span class="tag" id="decks"></span>
-    <button class="tbtn" id="btnAudio" title="sound and music">&#9835; on</button>
+    <button class="tbtn" id="btnMus" title="background music">&#9835;</button><button class="tbtn" id="btnSfx" title="sound effects">&#9836;</button>
     <button class="tbtn" id="btnRules">Rules</button>
   </div>
   <div class="body">
@@ -651,8 +671,8 @@ let AC=null, MUSIC=null, SFX_ON=true, MUS_ON=true;
 function ac(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
   if(AC && AC.state==="suspended") AC.resume(); return AC; }
 
-function tone({f=440,to=null,t=0.12,type="triangle",gain=.16,delay=0,slideT=null}){
-  const c=ac(); if(!c||!SFX_ON) return;
+function tone({f=440,to=null,t=0.12,type="triangle",gain=.16,delay=0,slideT=null,mus=false}){
+  const c=ac(); if(!c||(!SFX_ON&&!mus)) return;
   const o=c.createOscillator(), g=c.createGain();
   const t0=c.currentTime+delay;
   o.type=type; o.frequency.setValueAtTime(f,t0);
@@ -691,25 +711,86 @@ const SFX={
 };
 function sfx(k){ try{ SFX[k] && SFX[k](); }catch(e){} }
 
-/* Two loops built from a scale, not a recording. Calm is slow and sparse;
-   battle is the same key a third up, faster, with a low pulse under it. */
+/* ---- MUSIC ---------------------------------------------------------
+   Streamed from music/*.mp3 next to this file. They are NOT inlined: the
+   battle track alone is 5 MB and base64 would add 7 MB to the first byte
+   of the page. As separate files the game opens instantly and the music
+   arrives behind it. preload="none" means the battle track is not even
+   requested until someone actually fights.
+   If the files are missing - opening index.html bare, for instance - it
+   falls back to the synthesised loops so there is never dead silence. */
+const MUSIC_SRC={ calm:"music/calm.mp3", battle:"music/battle.mp3" };
+const MUSIC_VOL={ calm:0.30, battle:0.34 };   // company, not a soundtrack
+let MEL={}, MUS_MODE=null, PROC=null;
+
+function musEl(mode){
+  if(MEL[mode]) return MEL[mode];
+  const a=new Audio();
+  a.loop=true; a.preload="none"; a.volume=0;
+  a.addEventListener("error",()=>{ a.broken=true; if(MUS_MODE===mode) startProc(mode); });
+  a.src=MUSIC_SRC[mode];
+  MEL[mode]=a; return a;
+}
+function fade(a,to,ms,then){
+  if(a._f) clearInterval(a._f);
+  const from=a.volume||0, t0=performance.now();
+  a._f=setInterval(()=>{
+    const k=Math.min(1,(performance.now()-t0)/ms);
+    try{ a.volume=Math.max(0,Math.min(1,from+(to-from)*k)); }catch(e){}
+    if(k>=1){ clearInterval(a._f); a._f=null; if(then) then(); }
+  },40);
+}
 function startMusic(mode){
-  stopMusic(); const c=ac(); if(!c||!MUS_ON) return;
+  if(!MUS_ON || MUS_MODE===mode) return;
+  const prev=MUS_MODE; MUS_MODE=mode;
+  if(prev && MEL[prev]) fade(MEL[prev],0,700,()=>{ try{ MEL[prev].pause(); }catch(e){} });
+  stopProc();
+  const a=musEl(mode);
+  if(a.broken){ startProc(mode); return; }
+  const pr=a.play();
+  if(pr && pr.catch) pr.catch(()=>{});   // autoplay blocked; retried on next gesture
+  fade(a, MUSIC_VOL[mode], 900);
+}
+function stopMusic(){
+  Object.keys(MEL).forEach(k=>fade(MEL[k],0,400,()=>{ try{ MEL[k].pause(); }catch(e){} }));
+  stopProc(); MUS_MODE=null;
+}
+/* Calm covers the menu and the deck builder, battle covers the Battle
+   Phase. startMusic no-ops when the mode has not changed, so this is safe
+   to call from render(). */
+function musicScene(){
+  if(!MUS_ON) return;
+  if(SCREEN==="game"){
+    if(typeof G!=="undefined" && G && !G.over) return startMusic(G.phase===2?"battle":"calm");
+    return;
+  }
+  startMusic("calm");
+}
+/* First gesture unblocks audio - kick whatever should be playing. */
+addEventListener("pointerdown",function once(){
+  removeEventListener("pointerdown",once);
+  ac(); musicScene();
+  if(MUS_MODE && MEL[MUS_MODE]){ const pr=MEL[MUS_MODE].play(); if(pr&&pr.catch) pr.catch(()=>{}); }
+});
+
+/* ---- fallback: two loops built from a scale, not a recording ------- */
+function startProc(mode){
+  stopProc(); const c=ac(); if(!c||!MUS_ON) return;
   const calm  = [220,247,262,294,330,392,440];
   const fight = [262,294,311,349,392,440,466];
   const notes = mode==="battle"?fight:calm;
   const step  = mode==="battle"?0.34:0.62;
   let i=0;
-  MUSIC=setInterval(()=>{
+  PROC=setInterval(()=>{
     if(!MUS_ON) return;
     const f=notes[(i*3)%notes.length];
-    tone({f, t:step*1.6, type:"sine", gain:mode==="battle"?.045:.035});
-    if(i%4===0) tone({f:f/2, t:step*2.4, type:"triangle", gain:.03});
-    if(mode==="battle" && i%2===0) tone({f:98, t:.18, type:"sine", gain:.05});
+    tone({f, t:step*1.6, type:"sine", gain:mode==="battle"?.045:.035, mus:true});
+    if(i%4===0) tone({f:f/2, t:step*2.4, type:"triangle", gain:.03, mus:true});
+    if(mode==="battle" && i%2===0) tone({f:98, t:.18, type:"sine", gain:.05, mus:true});
     i++;
   }, step*1000);
 }
-function stopMusic(){ if(MUSIC){ clearInterval(MUSIC); MUSIC=null; } }
+function stopProc(){ if(PROC){ clearInterval(PROC); PROC=null; } }
 
 /* ===================================================================
    0. CATALOG
@@ -851,8 +932,9 @@ let SCREEN="start";
 function show(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));
   SCREEN=id;
+  musicScene();
 }
-document.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>{ stopMusic(); sfx("woosh"); show("start"); });
+document.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>{ sfx("woosh"); show("start"); });
 document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{
   const g=b.dataset.go;
   sfx("woosh");
@@ -918,13 +1000,16 @@ function rules(){
   <p style="margin-top:1.2em"><button class="tbtn" onclick="closeModal()">Close</button></p>`);
 }
 $("btnRules").onclick=rules;
-$("btnAudio").onclick=()=>{
-  const on = !(SFX_ON && MUS_ON);
-  SFX_ON=on; MUS_ON=on;
-  $("btnAudio").innerHTML = on ? "&#9835; on" : "&#9834; off";
-  if(!on) stopMusic(); else if(G && !G.over) startMusic(G.phase===2?"battle":"calm");
-  if(on) sfx("click");
-};
+/* Music and effects toggle separately - plenty of people want one and not
+   the other, and a loop you cannot silence is worse than no loop at all. */
+function paintAudioBtns(){
+  $("btnMus").classList.toggle("off", !MUS_ON);
+  $("btnSfx").classList.toggle("off", !SFX_ON);
+}
+$("btnMus").onclick=()=>{ MUS_ON=!MUS_ON; paintAudioBtns();
+  if(!MUS_ON) stopMusic(); else musicScene(); if(SFX_ON) sfx("click"); };
+$("btnSfx").onclick=()=>{ SFX_ON=!SFX_ON; paintAudioBtns(); if(SFX_ON) sfx("click"); };
+paintAudioBtns();
 
 
 /* ---- stamps: same art as the printed card ------------------------- */
@@ -1175,7 +1260,7 @@ function newGame(d1,d2,names,npc){
   say("h",`--- P1, turn 1 ---`);
   say("d","the first player skips their first Battle Phase");
   drawPhase();
-  show("game"); fxRest(); startMusic("calm"); render();
+  show("game"); fxRest(); render();
 }
 function startBattle(){
   const a=STORE.active&&STORE.decks[STORE.active];
@@ -2130,11 +2215,17 @@ function skillSheet(card, ctx){
   else if(already) why="This Unit already used its Skill this turn.";
 
   modal(`<div class="sheet">
-    <h2>${esc(card.name)}</h2>
-    ${sprImg(card)}
+    <div class="cardview">
+      <div class="cvtop"><span class="cvtier">T${card.tier}</span>
+        <span class="cvrar r-${card.rarity}"></span>
+        <span class="cvdw">${esc(card.dweller)}</span></div>
+      <div class="cvart">${sprImg(card)}</div>
+      <div class="cvname">${esc(card.name)}</div>
+      <div class="cvfoot"><span>${esc(card.attack)}</span>
+        <span>${card.movable?"movable":"immovable"}</span>
+        <span>d${DIE[card.tier]}</span></div>
+    </div>
     ${stampRow(card,true)}
-    <div class="stat">Tier ${card.tier} · ${esc(card.dweller)} · ${esc(card.attack)}
-      · ${card.movable?"movable":"immovable"} · ${esc(card.rarity)} · rolls d${DIE[card.tier]}</div>
     <div class="txt">${card.skill?esc(card.skill):"<i>No effect. A body and a die.</i>"}</div>
     ${has&&!SIMULATED.has(card.fx)?
       '<div class="note">This effect is printed but not simulated yet. Activating it logs the effect so you can resolve it yourselves.</div>':""}

@@ -1,0 +1,10 @@
+﻿PLACEHOLDER MUSIC - not final, licence not yet confirmed by GridOrcaGames.
+
+  music/calm.mp3    <- universfield-serene-horizons-30s-320651.mp3
+                       menu, deck builder, Recruitment Phase
+  music/battle.mp3  <- paulyudin-battle-battle-music-491417.mp3
+                       Battle Phase
+
+Before ANY paid release, confirm each track's licence permits commercial
+use and record whether attribution is required. If it is, the credit goes
+on the itch page and in the in-game Rules panel.
