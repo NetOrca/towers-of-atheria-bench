@@ -915,14 +915,25 @@ function newGame(d1,d2,names,npc){
 function startBattle(){
   const a=STORE.active&&STORE.decks[STORE.active];
   if(!a) return alert("Set an active deck in the Deck Builder first.");
-  // NPC gets a random legal deck drawn from the whole collection.
-  const pool=PLAYABLE.filter(c=>c.status==="final");
-  const npcIds=[]; while(npcIds.length<54){
-    const c=pool[Math.random()*pool.length|0];
-    if(npcIds.filter(x=>x===c.id).length<3) npcIds.push(c.id);
-  }
-  newGame(a.cards,npcIds,[a.name,"Wandering Host"],true);
+  modal(`<div class="sheet"><h2>Choose your opponent</h2>
+    <div class="stat">every opponent drafts a random deck from all ${PLAYABLE.length} cards</div>
+    <div class="row" style="flex-direction:column;align-items:stretch">
+      <button class="bigbtn go" onclick="beginBattle('easy')">Wandering Host — easy<br>
+        <small style="font-weight:400">bodies only, never uses Skills</small></button>
+      <button class="bigbtn" onclick="beginBattle('medium')">Ashbound Warband — medium<br>
+        <small style="font-weight:400">everything above, plus a Skill now and then</small></button>
+      <button class="bigbtn" onclick="beginBattle('hard')">The Crypt Court — hard<br>
+        <small style="font-weight:400">the whole rulebook, and it plays indirectly</small></button>
+    </div>
+    <div class="row"><button class="bigbtn" onclick="closeModal()">Back</button></div></div>`);
 }
+function beginBattle(level){
+  closeModal();
+  NPC_LEVEL=level;
+  const a=STORE.decks[STORE.active];
+  newGame(a.cards, randomDeck(), [a.name, NPC_PROFILES[level].name], true);
+}
+window.beginBattle=beginBattle;
 function startBench(){
   const names=Object.keys(STORE.decks);
   if(names.length<1) return alert("Save at least one deck first.");
@@ -1213,6 +1224,12 @@ function finishAttack(s,a,u,d,A,D,am,dm,defWasFaceDown){
     let verdict,vc;
     if(A.total>D.total){ verdict="ATTACKER WINS"; vc="v-win"; kill(a.r,a.c); }
     else if(A.total<D.total){ verdict="DEFENDER HOLDS"; vc="v-lose"; kill(s.r,s.c); }
+    else if(A.total===0 && D.total===0){
+      // Both rolls were dragged to the floor by debuffs. Two Units that cannot
+      // land a blow do not kill each other - the exchange simply fails.
+      verdict="BOTH ROLLS REDUCED TO 0 — NEITHER FALLS"; vc="v-tie";
+      say("r","  both rolls were reduced to 0 — no blow lands, both Units survive");
+    }
     else { verdict="TIE — BOTH DESTROYED"; vc="v-tie"; kill(a.r,a.c); kill(s.r,s.c); }
     fxPanel(`<div class="fxrow">
       <div><div class="who">${label(u)}</div>${diceHTML(A,me)}</div>
@@ -1313,10 +1330,90 @@ function cellClick(r,c){
   render();
 }
 
-/* ---- NPC: deliberately beatable, plays the plan not the optimum ---- */
+
+/* ===================================================================
+   OPPONENTS
+   easy    - bodies only. Summons, moves, attacks, strikes Towers.
+   medium  - all of that, plus one Skill roughly every 4 turns.
+   hard    - the whole rulebook, and deliberately indirect: it Sets
+             face down, declines obvious attacks to bait, tributes up,
+             and uses Skills freely.
+   All three draft a random legal deck from the ENTIRE card pool, so no
+   two games are the same and every card gets exposure.
+   =================================================================== */
+const NPC_PROFILES={
+  easy:   {name:"Wandering Host",  skills:0,    setChance:0,    baitChance:0,    tributeChance:.35},
+  medium: {name:"Ashbound Warband",skills:0.25, setChance:0.15, baitChance:0.10, tributeChance:.5},
+  hard:   {name:"The Crypt Court", skills:1,    setChance:0.40, baitChance:0.30, tributeChance:.7},
+};
+let NPC_LEVEL="easy";
+
+function randomDeck(){
+  const pool=PLAYABLE.filter(c=>c.status==="final");
+  const ids=[];
+  while(ids.length<54){
+    const c=pool[Math.random()*pool.length|0];
+    if(ids.filter(x=>x===c.id).length<3) ids.push(c.id);
+  }
+  return ids;
+}
+
+/* Skills open prompts and wait for a click. The NPC has no hands, so it
+   resolves its own prompts - otherwise the game deadlocks mid-turn. */
+function npcResolvePrompts(){
+  let guard=0;
+  while(guard++<12){
+    if(G.pick){
+      const legal=[];
+      for(let r=0;r<6;r++)for(let c=0;c<5;c++)
+        if(G.pick.filter(r,c,G.board[r][c])) legal.push({r,c});
+      if(!legal.length){ cancelPick(); continue; }
+      const P=G.pick; const need=P.need;
+      const chosen=[];
+      for(let i=0;i<need && legal.length;i++)
+        chosen.push(legal.splice(Math.random()*legal.length|0,1)[0]);
+      G.pick=null; P.cb(chosen.length?chosen:null);
+      continue;
+    }
+    if(PICKCARD_CB){ const cb=PICKCARD_CB; PICKCARD_CB=null; closeModal(); cb(0); continue; }
+    if(SOV_STATE){ SOV_STATE.banish=Math.min(2,G.P[SOV_STATE.me].disc.length); sovPay(); continue; }
+    break;
+  }
+  if($("modal").classList.contains("on")) closeModal();
+}
+
+function npcTrySkill(prof){
+  if(Math.random()>prof.skills) return false;
+  const mine=unitsOf(2).filter(x=>!x.u.fd && !x.u.skillUsed);
+  const cands=[];
+  for(const {r,c,u} of mine)
+    for(const card of u.cards)
+      // tokens and vanillas have no Skill to spend a turn on
+      if(card.skill && card.fx && card.fx!=="vanilla" && card.fx!=="token"
+         && card.rarity!=="token" && SIMULATED.has(card.fx))
+        cands.push({r,c,u,card});
+  // also anything activatable straight out of hand
+  for(const card of G.P[2].hand)
+    if(card.fx==="magma_mine"||card.fx==="bone_diviner"||card.fx==="cavalry_self_summon")
+      cands.push({card, ctx:null});
+  if(!cands.length) return false;
+  const pick=cands[Math.random()*cands.length|0];
+  const ctx = pick.r!==undefined ? {r:pick.r,c:pick.c} : null;
+  say("h",`P2 activates ${pick.card.name}`);
+  const cur=G.cur; G.cur=2;
+  try{ runActive(pick.card, ctx); npcResolvePrompts(); }
+  catch(e){ say("r","  (the opponent fumbled that one)"); G.pick=null; }
+  G.cur=cur;
+  if(pick.u) pick.u.skillUsed=true;
+  return true;
+}
+
+/* ---- the turn itself ---- */
 function npcTurn(){
   NPC_BUSY=true;
+  const prof=NPC_PROFILES[NPC_LEVEL]||NPC_PROFILES.easy;
   const P=G.P[2];
+  npcTrySkill(prof);
   // Recruitment: one summon, cheapest first, into a free Barracks.
   const spots=[]; for(let r=0;r<6;r++)for(let c=0;c<5;c++) if(canSummonAt(r,c,2)) spots.push({r,c});
   if(spots.length){
@@ -1324,7 +1421,7 @@ function npcTurn(){
     const mine=unitsOf(2).length;
     const bigs=P.hand.filter(c=>c.tier>1&&tributeCost(c.tier)<=mine)
                      .sort((a,b)=>b.tier-a.tier);
-    if(bigs.length&&Math.random()<.5){
+    if(bigs.length&&Math.random()<prof.tributeChance){
       const card=bigs[0],need=tributeCost(card.tier);
       const fodder=unitsOf(2).sort((a,b)=>a.u.cards[0].tier-b.u.cards[0].tier).slice(0,need);
       fodder.forEach(f=>kill(f.r,f.c,"tributed"));
@@ -1337,9 +1434,11 @@ function npcTurn(){
       const card=t1[Math.random()*t1.length|0];
       const sp=spots[Math.random()*spots.length|0];
       P.hand.splice(P.hand.indexOf(card),1);
-      G.board[sp.r][sp.c]=unit(2,[card]);
-      say("g",`P2 Normal Summons ${card.name} to ${rcName(sp.r,sp.c)}`);
-      onSummon(card,true);
+      // a harder opponent hides things - traps only work face down
+      const setIt = Math.random()<prof.setChance;
+      G.board[sp.r][sp.c]=unit(2,[card],{fd:setIt,setTurn:G.turn});
+      say("g",`P2 ${setIt?"Sets a card face down":"Normal Summons "+card.name} to ${rcName(sp.r,sp.c)}`);
+      if(!setIt) onSummon(card,true);
     }
   }
   G.phase=2; render();
@@ -1352,10 +1451,15 @@ function npcTurn(){
     const q=queue[i++];
     if(!G.board[q.r][q.c]){ return setTimeout(step,90); }
     const acts=actionsFrom(q.r,q.c);
-    const pick = acts.find(a=>a.k==="tower")
-              || acts.find(a=>a.k==="attack")
-              || acts.filter(a=>a.k==="move").sort((a,b)=>b.r-a.r)[0];
-    if(pick){ resolve({r:q.r,c:q.c},pick); render(); }
+    let pick = acts.find(a=>a.k==="tower") || acts.find(a=>a.k==="attack");
+    // bait: sometimes walk away from a fight it could take, and wait
+    if(pick && pick.k==="attack" && Math.random()<prof.baitChance){
+      const away=acts.filter(a=>a.k==="move");
+      if(away.length){ pick=away[Math.random()*away.length|0];
+        say("d","  P2 holds back rather than trading"); }
+    }
+    if(!pick) pick = acts.filter(a=>a.k==="move").sort((a,b)=>b.r-a.r)[0];
+    if(pick){ resolve({r:q.r,c:q.c},pick); npcResolvePrompts(); render(); }
     setTimeout(step,620);
   };
   setTimeout(step,420);
@@ -1854,6 +1958,51 @@ function formationMove(r,c,nr,nc){
   return riders;
 }
 
+
+/* Charnel Sovereign pays "in any combination" across three zones, so the
+   player allocates it rather than the engine guessing. Up to 4, and each
+   Token summoned costs exactly one. */
+let SOV_STATE=null;
+function sovereignCost(me){
+  SOV_STATE={me, banish:0, discard:0, mill:0};
+  sovereignDraw();
+}
+function sovereignDraw(){
+  const {me,banish,discard,mill}=SOV_STATE;
+  const P=G.P[me], total=banish+discard+mill, left=4-total;
+  const btn=(k,label,avail)=>
+    `<button class="bigbtn${avail&&left>0?" go":""}" ${avail&&left>0?`onclick="sovAdd('${k}')"`:"disabled"}>
+       ${label} <b>+1</b></button>`;
+  modal(`<div class="sheet"><h2>Charnel Sovereign</h2>
+    <div class="stat">pay up to 4 in any combination — each payment summons 1 Skeleton Knight Token</div>
+    <div class="txt">Banish from Discard: <b>${banish}</b> &nbsp;·&nbsp;
+      Discard from hand: <b>${discard}</b> &nbsp;·&nbsp; Mill from deck: <b>${mill}</b><br>
+      <b>${total} paid, ${left} remaining</b></div>
+    <div class="row" style="flex-direction:column;align-items:stretch">
+      ${btn("banish","Banish a Dungeon Dweller from your Discard", P.disc.length>banish)}
+      ${btn("discard","Discard a card from your hand", P.hand.length>discard)}
+      ${btn("mill","Mill the top card of your deck", P.deck.length>mill)}
+    </div>
+    <div class="row">
+      <button class="bigbtn go" ${total?"":"disabled"} onclick="sovPay()">Summon ${total} Token${total===1?"":"s"}</button>
+      <button class="bigbtn" onclick="sovCancel()">Cancel</button>
+    </div></div>`);
+}
+function sovAdd(k){ SOV_STATE[k]++; sovereignDraw(); }
+function sovCancel(){ SOV_STATE=null; closeModal(); render(); }
+function sovPay(){
+  const {me,banish,discard,mill}=SOV_STATE; const P=G.P[me];
+  SOV_STATE=null; closeModal();
+  for(let i=0;i<banish  && P.disc.length;i++) P.banish.push(P.disc.pop());
+  for(let i=0;i<discard && P.hand.length;i++) P.disc.push(P.hand.splice(0,1)[0]);
+  for(let i=0;i<mill    && P.deck.length;i++) P.disc.push(P.deck.pop());
+  const n=banish+discard+mill;
+  say("d",`  paid ${n} — banished ${banish}, discarded ${discard}, milled ${mill}`);
+  payAndSpawn(me,n,"Skeleton Knight Token",null);
+  render();
+}
+window.sovAdd=sovAdd; window.sovPay=sovPay; window.sovCancel=sovCancel;
+
 /* ---- roll-based and targeted Active Skills ------------------------- */
 function d(n){ return 1+(Math.random()*n|0); }
 function enemyUnits(p){ return unitsOf(p===1?2:1); }
@@ -1909,18 +2058,9 @@ function runActive(card, ctx){
       payAndSpawn(me,n,"Zombie Token",null);
       return true; }
 
-    case "charnel_sovereign": {
-      // cost may be split across banish / discard / mill; take what is there
-      let paid=0;
-      while(paid<4){
-        if(P.disc.length){ P.banish.push(P.disc.pop()); paid++; continue; }
-        if(P.hand.length){ P.disc.push(P.hand.splice(0,1)[0]); paid++; continue; }
-        if(P.deck.length){ P.disc.push(P.deck.pop()); paid++; continue; }
-        break;
-      }
-      say("d",`  paid ${paid} across banish, discard and mill`);
-      payAndSpawn(me,paid,"Skeleton Knight Token",null);
-      return true; }
+    case "charnel_sovereign":
+      sovereignCost(me);
+      return true;
 
     case "fetch_magma_mine": {
       let i=P.deck.findIndex(x=>x.name==="Magma Mine"), from="deck";
