@@ -379,6 +379,35 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 @media (max-width:820px){
   :root{--chrome:300px}
   #bTabs{display:flex;gap:.4em}
+
+  /* PHONE BATTLE LAYOUT
+     Two problems on a narrow screen:
+     1. the dice gutters flank the board, and 78px each of a 414px screen
+        left almost nothing for the board - so the rolls got squeezed away.
+     2. the action bar and hand live inside a scrolling area, so the phase
+        button fell below the fold and looked like it had vanished.
+     Fix: float the rolls OVER the board, and pin the action bar to the
+     bottom of the screen where a thumb already is. */
+  .gutter{position:fixed;top:34%;width:50vw;height:0;overflow:visible;
+    z-index:40;pointer-events:none;align-self:auto}
+  #gutL{left:0} #gutR{right:0}
+  /* span the half-width and centre the text, so the number never hugs the
+     screen edge. left/right rather than translateX, because the pop
+     animation already owns transform. */
+  .gutter .roll{left:0;right:0;text-align:center}
+  .gutter .zlab{display:none}
+  .roll .rv{font-size:clamp(40px,13vw,72px)}
+  .roll .rl{font-size:clamp(11px,3vw,14px)}
+  #boardRow{gap:0}
+
+  #selbar{position:sticky;bottom:0;z-index:35;
+    box-shadow:0 -6px 16px rgba(0,0,0,.55);margin-top:auto}
+  #selbar .bigbtn.phase{font-size:1.05em;padding:.6em 1.2em}
+  #hand{position:sticky;bottom:0;z-index:34}
+  #zones{font-size:.82em}
+  #zones .zgrp{padding:.25em .45em}
+  .bar{padding:.45em .6em}
+  .bar .tag{font-size:.78em}
   #builder .body{flex-direction:column}
   #pool,#side{width:100%;min-height:0}
   #side{border-left:none;border-top:1px solid #000}
