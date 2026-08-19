@@ -413,15 +413,14 @@ card("Flesh Collector", S, 2, "dungeon", "epic", "melee", True,
 
 # --- Tier 3 (6 names; Gargoyle prints x2 for the 7th slot) -------------
 card("Gargoyle", S, 3, "dungeon", "uncommon", "melee", True, "", "vanilla")
-# DESIGN NOTES (not printed): deliberately has NO Taunt - the intent was for it
-# to sit "perched with two Gargoyles" as a presence, not a hard wall.
-# OPEN CONFLICT: the source doc says this rolls a d8, but it is Tier 3 and in
-# this game the Tier IS the die (T3 = d12). Either it is really Tier 2, or it is
-# a deliberate exception to the one rule the whole combat system rests on.
-# Left as Tier 3 / d12 until AJ rules on it.
-card("Dungeon Door", S, 3, "dungeon", "uncommon", "melee", False,
+# Tier 2 confirmed by AJ, which also resolves the old d8 conflict: Tier 2 IS
+# d8, so the source doc was right about the die and the placeholder Tier was
+# wrong. No Taunt by design - the Units around it are meant to be protecting
+# IT, rather than it forcing itself to be attacked first.
+card("Dungeon Door", S, 2, "dungeon", "uncommon", "melee", False,
      "This Unit and adjacent Units you control add +1 to their rolls, "
      "regardless of Dweller Type.", "aura_plus1_any_incl_self")
+
 card("Charnel Warden", S, 3, "dungeon", "uncommon", "ranged", True,
      "Once per turn during your Recruitment Phase: banish 1 card from your Discard "
      "pile to Special Summon 1 Zombie Token.", "banish_for_zombie")

@@ -1039,7 +1039,7 @@
   "id": "ash_dungeon_door",
   "name": "Dungeon Door",
   "set": "ASH",
-  "tier": 3,
+  "tier": 2,
   "dweller": "dungeon",
   "rarity": "uncommon",
   "attack": "melee",

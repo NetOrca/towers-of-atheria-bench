@@ -31,7 +31,7 @@ Slagborn,2,lava,melee,yes,common,Sacrifice a Ride stack you control: Special Sum
 Goblin Bomb Carrier,2,lava,melee,yes,uncommon,"May be Set face down. If this Unit is destroyed by an opponent's card, add 1 Magma Mine from your deck to your hand.",,1,30,ASH,ASH,death_fetch_mine,final
 Flesh Collector,2,dungeon,melee,yes,epic,"Cleave - when this Unit wins a combat roll, also destroy 1 enemy Unit orthogonally adjacent to the Unit it defeated.",,1,31,ASH,ASH,cleave,final
 Gargoyle,3,dungeon,melee,yes,uncommon,,,1,32,ASH,ASH,vanilla,final
-Dungeon Door,3,dungeon,melee,no,uncommon,"This Unit and adjacent Units you control add +1 to their rolls, regardless of Dweller Type.",,1,33,ASH,ASH,aura_plus1_any_incl_self,final
+Dungeon Door,2,dungeon,melee,no,uncommon,"This Unit and adjacent Units you control add +1 to their rolls, regardless of Dweller Type.",,1,33,ASH,ASH,aura_plus1_any_incl_self,final
 Charnel Warden,3,dungeon,ranged,yes,uncommon,Once per turn during your Recruitment Phase: banish 1 card from your Discard pile to Special Summon 1 Zombie Token.,,1,34,ASH,ASH,banish_for_zombie,final
 Ashen Lancer,3,dungeon,melee,yes,rare,"When this Unit moves during the Battle Phase, every Unit you control adjacent to it moves the same number of squares in the same direction. This does not use those Units' own movement.",,1,35,ASH,ASH,formation_move,final
 Ash Golem,3,lava,melee,yes,rare,This Unit adds +1 to its roll for each Wisp Token adjacent to it.,,1,36,ASH,ASH,wisp_scaling,final
