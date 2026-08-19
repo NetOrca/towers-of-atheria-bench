@@ -58,5 +58,5 @@ Tower of Bones,3,dungeon,ranged,no,epic,Sacrifice a Ride stack you control: Spec
 Pyre,3,lava,ranged,no,epic,Sacrifice a Ride stack you control: Special Summon a Unit one Tier higher than the stack's highest Tier from your Discard pile or deck.,,1,57,ASH,ASH,ascend_discard_deck,final
 Crypt Caller,3,dungeon,melee,yes,legendary,Sacrifice a Ride stack you control: Special Summon 1 Dungeon Dweller from your Discard pile to that stack's square. No Tier restriction.,,1,58,ASH,ASH,ascend_crypt_caller,final
 Magma Minefield,3,lava,melee,no,rare,Once per turn: add 1 Magma Mine from your deck or Discard pile to your hand.,,1,59,ASH,ASH,fetch_magma_mine,final
-Undead Drake,3,dungeon,melee,yes,rare,"Once per turn: if this Unit is part of a Ride stack, send this card to the Discard pile instead of destroying the stack.",,1,60,ASH,ASH,drake_saves_stack,partial
-Undead Cavalry,2,dungeon,melee,yes,rare,Discard 2 cards: Special Summon this Unit from your hand or your Discard pile.,,1,61,ASH,ASH,cavalry_self_summon,partial
+Undead Drake,3,dungeon,melee,yes,rare,"Once per turn: if this Unit is part of a Ride stack, send this card to the Discard pile instead of destroying the stack.",,1,60,ASH,ASH,drake_saves_stack,final
+Undead Cavalry,2,dungeon,melee,yes,rare,Discard 2 cards: Special Summon this Unit from your hand or your Discard pile.,,1,61,ASH,ASH,cavalry_self_summon,final

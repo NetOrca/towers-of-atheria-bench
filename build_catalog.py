@@ -533,17 +533,17 @@ card("Magma Minefield", S, 3, "lava", "rare", "melee", False,
      "Once per turn: add 1 Magma Mine from your deck or Discard pile to your hand.",
      "fetch_magma_mine")
 
-# Skills are AJ's, confirmed. Tier / rarity / attack / movement are still my
-# placeholders from the asset-reuse notes, so these stay "partial" until he
-# sets them - the status flag is what stops a guess being treated as balanced.
+# Both signed off by AJ Aug 2026 - skills his, stats confirmed as printed.
+# The Drake is the reason Riding is worth the risk: a Ride stack normally
+# costs you BOTH cards when it dies, and he turns that into a one-card loss.
 card("Undead Drake", S, 3, "dungeon", "rare", "melee", True,
      "Once per turn: if this Unit is part of a Ride stack, send this card to "
      "the Discard pile instead of destroying the stack.",
-     "drake_saves_stack", status="partial")
+     "drake_saves_stack")
 card("Undead Cavalry", S, 2, "dungeon", "rare", "melee", True,
      "Discard 2 cards: Special Summon this Unit from your hand or your "
      "Discard pile.",
-     "cavalry_self_summon", status="partial")
+     "cavalry_self_summon")
 
 # ======================================================================
 # emit
