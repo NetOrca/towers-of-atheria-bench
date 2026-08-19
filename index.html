@@ -369,13 +369,29 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .mbox table{width:100%;border-collapse:collapse;margin:.5em 0}
 .mbox td,.mbox th{border-bottom:1px solid #3a3226;padding:.3em .5em;text-align:left}
 
+/* On a phone the builder becomes TABBED. Stacking the two panels looked
+   fine in theory, but #deckList sizes to its content - 54 rows - so it ate
+   the whole viewport and collapsed the card pool to nothing. */
+#bTabs{display:none}
+#bTabs .tbtn.on{background:var(--gold);color:#1c1710;border-color:var(--gold);font-weight:700}
+
 @media (max-height:700px){ :root{--chrome:330px} }
 @media (max-width:820px){
   :root{--chrome:300px}
+  #bTabs{display:flex;gap:.4em}
+  #builder .body{flex-direction:column}
+  #pool,#side{width:100%;min-height:0}
+  #side{border-left:none;border-top:1px solid #000}
+  /* exactly one panel at a time */
+  #builder:not(.showDeck) #side{display:none}
+  #builder.showDeck #pool{display:none}
+  #builder.showDeck #side{display:flex;flex:1}
+  #builder:not(.showDeck) #pool{display:grid;flex:1}
+  .filters{padding:.5em .7em}
+  #q{width:100%}
   #game .body{flex-direction:column}
   #side2{width:100%;border-left:none;border-top:1px solid #000;max-height:34vh}
   #side{width:100%}
-  #builder .body{flex-direction:column}
 }
 </style>
 </head>
@@ -401,6 +417,10 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
     <button class="tbtn" data-back>&larr; Back</button>
     <span class="tag">Deck Builder</span>
     <input type="search" id="q" placeholder="search name or text" style="width:min(240px,30vw)">
+    <span id="bTabs">
+      <button class="tbtn" id="tabPool">Collection</button>
+      <button class="tbtn" id="tabDeck">Deck</button>
+    </span>
     <span class="grow"></span>
     <span class="tag" id="poolCount"></span>
   </div>
@@ -753,6 +773,7 @@ function renderDeck(){
   const n=CUR.cards.length;
   const legal = n>=40 && n<=60;
   const tiers={1:0,2:0,3:0,4:0}; CUR.cards.forEach(id=>tiers[BY_ID[id].tier]++);
+  const dt=$("tabDeck"); if(dt) dt.textContent=`Deck (${n})`;
   $("deckStat").innerHTML=
     `<b style="color:${legal?'var(--good)':'var(--bad)'}">${n} cards</b> `+
     `<span class="tag">${legal?"legal":"needs 40–60"}</span><br>`+
@@ -771,6 +792,17 @@ function renderDeck(){
       el.appendChild(r);
     });
 }
+
+/* builder tabs — only meaningful under the 820px breakpoint, harmless above */
+function builderTab(which){
+  $("builder").classList.toggle("showDeck", which==="deck");
+  $("tabPool").classList.toggle("on", which!=="deck");
+  $("tabDeck").classList.toggle("on", which==="deck");
+}
+$("tabPool").onclick=()=>builderTab("pool");
+$("tabDeck").onclick=()=>builderTab("deck");
+builderTab("pool");
+
 $("saveDeck").onclick=()=>{
   const nm=$("deckName").value.trim();
   if(!nm) return alert("Give the deck a name first.");
