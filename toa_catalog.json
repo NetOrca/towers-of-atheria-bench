@@ -778,7 +778,7 @@
   "rarity": "common",
   "attack": "melee",
   "movable": true,
-  "skill": "May be Set face down. If battled, after damage is applied the attacker subtracts 2 from its next roll this turn.",
+  "skill": "When this Unit is attacked while face down: after the battle resolves, the attacking Unit subtracts 2 from its next roll this turn.",
   "fx": "trap_debuff2",
   "status": "final",
   "art_note": ""
@@ -792,7 +792,7 @@
   "rarity": "common",
   "attack": "melee",
   "movable": true,
-  "skill": "May be Set face down. If battled, after damage is applied, destroy both this Unit and the attacker.",
+  "skill": "When this Unit is attacked while face down: after the battle resolves, destroy both this Unit and the attacking Unit.",
   "fx": "trap_mutual_destruct",
   "status": "final",
   "art_note": ""
@@ -1002,7 +1002,7 @@
   "rarity": "uncommon",
   "attack": "melee",
   "movable": true,
-  "skill": "May be Set face down. If this Unit is destroyed by an opponent's card, add 1 Magma Mine from your deck to your hand.",
+  "skill": "When this Unit is destroyed by an opponent's card: add 1 Magma Mine from your deck to your hand.",
   "fx": "death_fetch_mine",
   "status": "final",
   "art_note": "Small goblin carrying a mine far too heavy for him. Comic-relief fodder."

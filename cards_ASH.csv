@@ -12,8 +12,8 @@ Graveyard Wraith,1,dungeon,melee,yes,common,Dungeon Dwellers in the 8 adjacent s
 Ash Skink,1,lava,melee,yes,common,On Normal Summon: draw 1 card.,,1,11,ASH,ASH,on_normal_summon_draw1,final
 Undead Hound,1,dungeon,melee,yes,common,When destroyed: search your deck for a Tier 1 or Tier 2 Dungeon Dweller and add it to your hand.,,1,12,ASH,ASH,death_search_dungeon,final
 Ember Wisp,1,lava,ranged,yes,common,When destroyed: search your deck for a Tier 1 or Tier 2 Lava Dweller and add it to your hand.,,1,13,ASH,ASH,death_search_lava,final
-Grave Snare,1,dungeon,melee,yes,common,"May be Set face down. If battled, after damage is applied the attacker subtracts 2 from its next roll this turn.",,1,14,ASH,ASH,trap_debuff2,final
-Immolation Trap,1,lava,melee,yes,common,"May be Set face down. If battled, after damage is applied, destroy both this Unit and the attacker.",,1,15,ASH,ASH,trap_mutual_destruct,final
+Grave Snare,1,dungeon,melee,yes,common,"When this Unit is attacked while face down: after the battle resolves, the attacking Unit subtracts 2 from its next roll this turn.",,1,14,ASH,ASH,trap_debuff2,final
+Immolation Trap,1,lava,melee,yes,common,"When this Unit is attacked while face down: after the battle resolves, destroy both this Unit and the attacking Unit.",,1,15,ASH,ASH,trap_mutual_destruct,final
 Grave Shifter,1,dungeon,melee,yes,uncommon,"Swap places with any Unit on the board, yours or your opponent's.",,1,16,ASH,ASH,swap_any,final
 Immovable Bog,1,dungeon,melee,no,common,Dungeon and Forest Dwellers in the 8 adjacent squares add +1 to their rolls. All other Dweller Types in those squares subtract 3.,,1,17,ASH,ASH,aura_bog,final
 Molten Field,1,lava,melee,no,common,"Lava Dwellers in the 8 adjacent squares add +1 to their rolls. At the start of your Recruitment Phase, Special Summon 1 Wisp Token to your Barracks.",,1,18,ASH,ASH,aura_lava_and_wisp,final
@@ -28,7 +28,7 @@ Fire Imp,2,lava,ranged,yes,common,,,1,26,ASH,ASH,vanilla,final
 Undead Mare,2,dungeon,melee,yes,common,"If a Tier 1 Unit Rides this card, the stack adds +2 to its roll in battle.",,1,27,ASH,ASH,ridden_by_t1_plus2,final
 Ghoul Rider,2,dungeon,melee,yes,common,Sacrifice a Ride stack you control: Special Summon a Unit one Tier higher than the stack's highest Tier from your hand.,,1,28,ASH,ASH,ascend_hand,final
 Slagborn,2,lava,melee,yes,common,Sacrifice a Ride stack you control: Special Summon a Unit one Tier higher than the stack's highest Tier from your hand.,,1,29,ASH,ASH,ascend_hand,final
-Goblin Bomb Carrier,2,lava,melee,yes,uncommon,"May be Set face down. If this Unit is destroyed by an opponent's card, add 1 Magma Mine from your deck to your hand.",,1,30,ASH,ASH,death_fetch_mine,final
+Goblin Bomb Carrier,2,lava,melee,yes,uncommon,When this Unit is destroyed by an opponent's card: add 1 Magma Mine from your deck to your hand.,,1,30,ASH,ASH,death_fetch_mine,final
 Flesh Collector,2,dungeon,melee,yes,epic,"Cleave - when this Unit wins a combat roll, also destroy 1 enemy Unit orthogonally adjacent to the Unit it defeated.",,1,31,ASH,ASH,cleave,final
 Gargoyle,3,dungeon,melee,yes,uncommon,,,1,32,ASH,ASH,vanilla,final
 Dungeon Door,2,dungeon,melee,no,uncommon,"This Unit and adjacent Units you control add +1 to their rolls, regardless of Dweller Type.",,1,33,ASH,ASH,aura_plus1_any_incl_self,final

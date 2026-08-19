@@ -360,11 +360,13 @@ card("Ember Wisp", S, 1, "lava", "common", "ranged", True,
      "When destroyed: search your deck for a Tier 1 or Tier 2 Lava Dweller "
      "and add it to your hand.", "death_search_lava")
 card("Grave Snare", S, 1, "dungeon", "common", "melee", True,
-     "May be Set face down. If battled, after damage is applied the attacker "
-     "subtracts 2 from its next roll this turn.", "trap_debuff2")
+     "When this Unit is attacked while face down: after the battle resolves, "
+     "the attacking Unit subtracts 2 from its next roll this turn.",
+     "trap_debuff2")
 card("Immolation Trap", S, 1, "lava", "common", "melee", True,
-     "May be Set face down. If battled, after damage is applied, destroy both "
-     "this Unit and the attacker.", "trap_mutual_destruct")
+     "When this Unit is attacked while face down: after the battle resolves, "
+     "destroy both this Unit and the attacking Unit.",
+     "trap_mutual_destruct")
 card("Grave Shifter", S, 1, "dungeon", "uncommon", "melee", True,
      "Swap places with any Unit on the board, yours or your opponent's.",
      "swap_any")
@@ -413,8 +415,8 @@ card("Slagborn", S, 2, "lava", "common", "melee", True,
      "Sacrifice a Ride stack you control: Special Summon a Unit one Tier higher "
      "than the stack's highest Tier from your hand.", "ascend_hand")
 card("Goblin Bomb Carrier", S, 2, "lava", "uncommon", "melee", True,
-     "May be Set face down. If this Unit is destroyed by an opponent's card, add "
-     "1 Magma Mine from your deck to your hand.", "death_fetch_mine")
+     "When this Unit is destroyed by an opponent's card: add 1 Magma Mine from "
+     "your deck to your hand.", "death_fetch_mine")
 card("Flesh Collector", S, 2, "dungeon", "epic", "melee", True,
      "Cleave - when this Unit wins a combat roll, also destroy 1 enemy Unit "
      "orthogonally adjacent to the Unit it defeated.",
