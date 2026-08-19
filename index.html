@@ -497,6 +497,11 @@ const SIMULATED = new Set([...Object.keys(AURA),"vanilla","token","",
   "unbanish_to_hand","search_forest_low","raise_t1_from_discard","banish_for_zombie",
   "spawn_bear_token","spawn_squirrel_token","aegis_mass_recur","hand_reroll",
   "trap_mutual_destruct","trap_debuff2",
+  "ascend_hand","ascend_hand_deck","ascend_discard_deck","ascend_crypt_caller",
+  "ride_from_hand_lava","swap_friendly","swap_any","aura_plus1_single",
+  "charnel_reaper","bone_harvester","charnel_sovereign","fetch_magma_mine",
+  "peek_top","cavalry_self_summon","death_lava_swing","formation_move",
+  "punish_extra_draw",
   "search_summon_dungeon","search_summon_lava","search_banish_dungeon",
   "search_banish_lava","search_discard_dungeon","search_discard_lava"]);
 
@@ -926,7 +931,7 @@ function modAt(r,c,u){
     }
   }
   for(const card of u.cards) if(SELF_AURA.has(card.fx)) m+=1;
-  return m + extra + (u.nextRollMod||0);
+  return m + extra + (u.nextRollMod||0) + (u.turnMod||0);
 }
 const unitsOf=p=>{const o=[];for(let r=0;r<6;r++)for(let c=0;c<5;c++){
   const u=G.board[r][c]; if(u&&u.own===p)o.push({r,c,u});} return o;};
@@ -958,6 +963,23 @@ function rollDetail(u,mod){
 }
 
 /* ---- phases ---- */
+/* Every draw outside the Draw Phase goes through here, so Makeshift Catapult
+   has something to react to. */
+function drawCards(player, n, reason){
+  const P=G.P[player], foe=player===1?2:1;
+  let drawn=0;
+  for(let i=0;i<n && P.deck.length;i++){ P.hand.push(P.deck.pop()); drawn++; }
+  if(drawn) say("g",`  drew ${drawn}${reason?" ("+reason+")":""}`);
+  // an enemy Makeshift Catapult strips the card straight back off
+  const cat = unitsOf(foe).find(x=>!x.u.fd && has(x.u,"punish_extra_draw") && !x.u.skillUsed);
+  if(cat && drawn && G.phase!==0){
+    cat.u.skillUsed=true;
+    P.disc.push(P.hand.pop());
+    say("k",`  MAKESHIFT CATAPULT — that card is discarded immediately`);
+  }
+  return drawn;
+}
+
 function drawPhase(){
   for(const{u}of unitsOf(G.cur)){ u.tapped=false;u.sick=false;u.moved=false;u.acted=false;u.skillUsed=false; }
   const P=G.P[G.cur];
@@ -985,7 +1007,7 @@ function startOfRecruitment(){
   }
   for(const {u} of unitsOf(G.cur)) u.struckTwice=false;
   (G.rerollMuted=G.rerollMuted||{})[G.cur]=false;
-  for(const {u} of unitsOf(G.cur)) u.nextRollMod=0;   // trap penalties last one turn
+  for(const {u} of unitsOf(G.cur)){ u.nextRollMod=0; u.turnMod=0; }
 }
 function toBattle(){
   G.phase=2; G.mode=null; G.sel=null;
@@ -1010,11 +1032,10 @@ const canSummonAt=(r,c,p)=>{const z=zone(r,c);return z.own===p&&z.kind==="barr"&
 function onSummon(card,normal){
   const P=G.P[G.cur];
   if(card.fx==="on_summon_draw1"||(normal&&card.fx==="on_normal_summon_draw1")){
-    if(P.deck.length){ P.hand.push(P.deck.pop()); say("g",`  ${card.name}: draw 1`); }
+    drawCards(G.cur,1,card.name);
   }
   if(card.fx==="empty_hand_draw5" && P.hand.length===0){
-    for(let i=0;i<5&&P.deck.length;i++) P.hand.push(P.deck.pop());
-    say("g",`  ${card.name}: hand was empty — draw 5`);
+    say("g",`  ${card.name}: hand was empty`); drawCards(G.cur,5,card.name);
   }
   if(card.fx && !SIMULATED.has(card.fx))
     say("r",`  ${card.name}: "${card.skill}" — NOT SIMULATED, resolve it yourselves`);
@@ -1094,7 +1115,13 @@ function millTower(foe,n,u){
 function resolve(s,a){
   const u=G.board[s.r][s.c],me=u.own,foe=me===1?2:1;
   if(a.k==="move"){
+    const riders=formationMove(s.r,s.c,a.r,a.c);
     G.board[a.r][a.c]=u; G.board[s.r][s.c]=null; u.moved=true;
+    for(const rd of riders){
+      if(G.board[rd.to.r][rd.to.c]) continue;
+      G.board[rd.to.r][rd.to.c]=rd.o; G.board[rd.from.r][rd.from.c]=null;
+      say("g",`  FORMATION — ${label(rd.o)} advances with him, ${rcName(rd.from.r,rd.from.c)} → ${rcName(rd.to.r,rd.to.c)}`);
+    }
     say("d",`move ${u.fd?"face-down":label(u)}  ${rcName(s.r,s.c)} → ${rcName(a.r,a.c)}`);
     return;
   }
@@ -1207,6 +1234,7 @@ function fxRest(){ /* retired */ }
 /* ---- clicking ---- */
 function cellClick(r,c){
   if(G.over) return;
+  if(pickHandled(r,c)) return;
   if(NPC_ON&&G.cur===2) return;
   const P=G.P[G.cur];
   if(G.mode){
@@ -1308,6 +1336,59 @@ function npcTurn(){
 
 
 
+
+
+/* ===================================================================
+   1. TARGETING
+   Until now the engine auto-picked ("destroys a random enemy Unit"),
+   which is fine for a coin flip and wrong for anything the player is
+   meant to choose. pickSquare() suspends the action, highlights every
+   legal square, and resumes in a callback when the player clicks one.
+   =================================================================== */
+function pickSquare(prompt, filter, cb, need){
+  const legal=[];
+  for(let r=0;r<6;r++)for(let c=0;c<5;c++) if(filter(r,c,G.board[r][c])) legal.push({r,c});
+  if(!legal.length){ say("r",`  ${prompt} — no legal target`); return cb(null); }
+  G.pick={prompt, filter, cb, taken:[], need:need||1};
+  say("d",`  ${prompt}`);
+  render();
+}
+function cancelPick(){ if(G.pick){ const cb=G.pick.cb; G.pick=null; say("r","  cancelled"); cb(null); render(); } }
+window.cancelPick=cancelPick;
+
+function pickHandled(r,c){
+  if(!G.pick) return false;
+  const P=G.pick;
+  if(!P.filter(r,c,G.board[r][c])) return true;          // swallow illegal clicks
+  if(P.taken.some(t=>t.r===r&&t.c===c)) return true;
+  P.taken.push({r,c});
+  if(P.taken.length>=P.need){ const {cb,taken}=P; G.pick=null; cb(taken); }
+  render(); return true;
+}
+
+/* Generic card chooser for hand / deck / Discard / Banished. */
+function pickCard(title, cards, cb, note){
+  if(!cards.length){ say("r",`  ${title} — nothing to choose`); return cb(null); }
+  PICKCARD_CB=cb;
+  modal(`<div class="sheet"><h2>${esc(title)}</h2>
+    ${note?`<div class="stat">${esc(note)}</div>`:""}
+    <div class="zlist">${cards.map((c,i)=>`
+      <div class="zrow"><span class="zn">${esc(c.name)}</span>
+        <span class="zt">T${c.tier} · ${esc(c.dweller)}</span>
+        <button class="bigbtn go" onclick="choseCard(${i})">Choose</button></div>`).join("")}</div>
+    <div class="row"><button class="bigbtn" onclick="choseCard(-1)">Cancel</button></div></div>`);
+}
+let PICKCARD_CB=null;
+function choseCard(i){ const cb=PICKCARD_CB; PICKCARD_CB=null; closeModal();
+  if(cb) cb(i<0?null:i); render(); }
+window.choseCard=choseCard;
+
+/* A modifier that lasts the rest of THIS turn, distinct from the one-shot
+   nextRollMod the traps use. */
+function grantTurnMod(u, n, why){
+  u.turnMod=(u.turnMod||0)+n;
+  say("g",`  ${label(u)} ${n>0?"+":""}${n} this turn${why?" ("+why+")":""}`);
+}
 
 /* ===================================================================
    REROLL INTERRUPT  (Orion's Blessing)
@@ -1442,9 +1523,14 @@ function onDeath(card, owner, r, c){
       const i=P.deck.findIndex(x=>x.name==="Magma Mine");
       if(i>=0){ P.hand.push(P.deck.splice(i,1)[0]); say("g","  added Magma Mine to hand"); }
       break; }
-    case "death_lava_swing":
-      say("r","  Cinder Bat: adjacent Lava Dwellers +1 and non-Lava -1 on their next roll (one-shot, resolve at the table)");
-      break;
+    case "death_lava_swing": {
+      for(const p of around(r,c)){
+        const o=G.board[p.r][p.c]; if(!o||o.fd) continue;
+        const lava=o.cards[0].dweller==="lava";
+        o.nextRollMod=(o.nextRollMod||0)+(lava?1:-1);
+        say(lava?"g":"r",`  ${label(o)} ${lava?"+1":"-1"} on its next roll`);
+      }
+      break; }
   }
 }
 
@@ -1581,6 +1667,131 @@ function skillSheet(card, ctx){
 window.skillSheet=skillSheet;
 
 
+
+/* ===================================================================
+   2. ASCENSION FAMILY  (6 cards, one behaviour)
+   Sacrifice a Ride stack, Special Summon a Unit one Tier above the
+   STACK'S HIGHEST Tier. Only the source zone scales with rarity:
+     common    hand
+     uncommon  hand or deck
+     epic      Discard pile or deck
+     legendary Crypt Caller - straight from the Discard, no Tier limit
+   =================================================================== */
+const ASCEND_ZONES={ascend_hand:["hand"], ascend_hand_deck:["hand","deck"],
+                    ascend_discard_deck:["disc","deck"], ascend_crypt_caller:["disc"]};
+const ZONE_NAME={hand:"hand", deck:"deck", disc:"Discard pile"};
+
+function ascend(card, ctx){
+  const me=G.cur, P=G.P[me];
+  const zones=ASCEND_ZONES[card.fx];
+  pickSquare("choose a Ride stack you control to sacrifice",
+    (r,c,u)=>u && u.own===me && u.cards.length>=2,
+    (sel)=>{
+      if(!sel) return;
+      const {r,c}=sel[0], stack=G.board[r][c];
+      const top=Math.max(...stack.cards.map(x=>x.tier));
+      const crypt = card.fx==="ascend_crypt_caller";
+      const wantTier = top+1;
+      // gather every legal candidate across the allowed zones
+      const opts=[];
+      for(const z of zones) P[z].forEach((cd,i)=>{
+        const ok = crypt ? cd.dweller==="dungeon" : cd.tier===wantTier;
+        if(ok) opts.push({zone:z,i,cd});
+      });
+      if(!opts.length){
+        say("r",`  nothing to summon — needed ${crypt?"a Dungeon Dweller":"a Tier "+wantTier+" Unit"} in your ${zones.map(z=>ZONE_NAME[z]).join(" or ")}`);
+        return render();
+      }
+      pickCard(crypt?"Summon a Dungeon Dweller from your Discard"
+                    :`Summon a Tier ${wantTier} Unit`,
+        opts.map(o=>o.cd),
+        (idx)=>{
+          if(idx===null) return render();
+          const pickOpt=opts[idx];
+          say("h",`ASCENSION — ${label(stack)} is sacrificed`);
+          doKill(r,c,"sacrificed for Ascension",true);
+          const cd=P[pickOpt.zone].splice(pickOpt.i,1)[0];
+          G.board[r][c]=unit(me,[cd],{sick:true,tapped:true});
+          say("g",`  Special Summon ${cd.name} from your ${ZONE_NAME[pickOpt.zone]} to ${rcName(r,c)}`);
+          render();
+        },
+        `from your ${zones.map(z=>ZONE_NAME[z]).join(" or ")}`);
+    });
+  return true;
+}
+
+/* ===================================================================
+   3. RIDE FROM HAND  (Cinder Skeleton)
+   Attaches straight out of hand onto a Lava Dweller you control, and
+   deliberately does NOT consume your Normal Summon for the turn.
+   =================================================================== */
+function rideFromHand(card){
+  const me=G.cur, P=G.P[me];
+  pickSquare("choose a Lava Dweller you control to ride",
+    (r,c,u)=>u && u.own===me && !u.fd && u.cards.length===1 && u.cards[0].dweller==="lava",
+    (sel)=>{
+      if(!sel) return render();
+      const {r,c}=sel[0], host=G.board[r][c];
+      const i=P.hand.findIndex(x=>x.id===card.id);
+      if(i<0) return render();
+      host.cards.push(P.hand.splice(i,1)[0]);
+      host.tapped=false; host.sick=false; host.moved=false; host.acted=false;
+      say("g",`RIDE FROM HAND → ${label(host)} at ${rcName(r,c)} — rolls ${dieTxt(host)}`);
+      say("r","  this did not use your Normal Summon");
+      render();
+    });
+  return true;
+}
+
+
+/* ===================================================================
+   4. TOKEN GENERATION ON DEMAND
+   The Charnel line pays a cost across several zones, then places.
+   NOTE: "Tokens" is unspecified on Charnel Reaper and Bone Harvester;
+   they are the necromancer family, so Zombie Tokens. Flagged in case
+   AJ wants a distinct one.
+   =================================================================== */
+function payAndSpawn(me, n, tokenName, adjacentTo){
+  let made=0;
+  for(let k=0;k<n;k++){
+    let r,c;
+    if(adjacentTo){
+      const spot=around(adjacentTo.r,adjacentTo.c)
+        .find(p=>!G.board[p.r][p.c] && zone(p.r,p.c).own===me && zone(p.r,p.c).kind!=="tower");
+      if(!spot) break;
+      r=spot.r; c=spot.c;
+    }
+    if(spawnToken(me, tokenName, r, c)) made++;
+  }
+  if(!made) say("r","  nowhere to place a Token");
+  return made;
+}
+
+/* ===================================================================
+   5. FORMATION MOVEMENT  (Ashen Lancer)
+   Everything adjacent to him when he moves shifts the same way, free.
+   Snapshot the neighbours BEFORE the move or he drags nothing.
+   =================================================================== */
+function formationMove(r,c,nr,nc){
+  const u=G.board[r][c];
+  if(!u || !has(u,"formation_move")) return [];
+  const dr=nr-r, dc=nc-c;
+  const riders=[];
+  for(const p of around(r,c)){
+    const o=G.board[p.r][p.c];
+    if(!o || o.own!==u.own) continue;
+    const tr=p.r+dr, tc=p.c+dc;
+    if(!inB(tr,tc)) continue;
+    const z=zone(tr,tc);
+    if(z.kind==="tower") continue;
+    if(z.own!==u.own && z.kind==="barr") continue;
+    if(G.board[tr][tc]) continue;
+    if(!canMove(o)) continue;
+    riders.push({from:p, to:{r:tr,c:tc}, o});
+  }
+  return riders;
+}
+
 /* ---- roll-based and targeted Active Skills ------------------------- */
 function d(n){ return 1+(Math.random()*n|0); }
 function enemyUnits(p){ return unitsOf(p===1?2:1); }
@@ -1590,6 +1801,100 @@ function runActive(card, ctx){
   const roll=()=>{ const v=d(die); flyRoll(me,v,card.name.split(",")[0],"tower");
                    say("",`  rolled d${die} = ${v}`); return v; };
   switch(card.fx){
+
+    case "ascend_hand": case "ascend_hand_deck":
+    case "ascend_discard_deck": case "ascend_crypt_caller":
+      return ascend(card, ctx);
+
+    case "ride_from_hand_lava":
+      return rideFromHand(card);
+
+    case "swap_friendly": case "swap_any": {
+      const anyone = card.fx==="swap_any";
+      if(!ctx || ctx.r===undefined){ say("r","  this Unit must be on the field"); return true; }
+      const sr=ctx.r, sc=ctx.c;
+      pickSquare(anyone?"choose any Unit on the board to swap with"
+                       :"choose a Unit you control to swap with",
+        (r,c,u2)=>u2 && !(r===sr&&c===sc) && (anyone || u2.own===me),
+        (sel)=>{ if(!sel) return render();
+          const {r,c}=sel[0];
+          const a1=G.board[sr][sc], b1=G.board[r][c];
+          G.board[sr][sc]=b1; G.board[r][c]=a1;
+          say("g",`  SWAP — ${label(a1)} ${rcName(sr,sc)} ⇄ ${label(b1)} ${rcName(r,c)}`);
+          render(); });
+      return true; }
+
+    case "aura_plus1_single": {               // City Guard Dog
+      if(!ctx || ctx.r===undefined){ say("r","  this Unit must be on the field"); return true; }
+      pickSquare("choose an adjacent Unit you control to inspire",
+        (r,c,u2)=>u2 && u2.own===me && Math.max(Math.abs(r-ctx.r),Math.abs(c-ctx.c))===1,
+        (sel)=>{ if(!sel) return render();
+          grantTurnMod(G.board[sel[0].r][sel[0].c], 1, "City Guard Dog"); render(); });
+      return true; }
+
+    case "charnel_reaper": {
+      if(P.disc.length<2){ say("r","  you need 2 cards in your Discard pile"); return true; }
+      for(let i=0;i<2;i++) P.banish.push(P.disc.pop());
+      say("d","  banished 2 from your Discard pile as the cost");
+      payAndSpawn(me,2,"Zombie Token", ctx&&ctx.r!==undefined?ctx:null);
+      return true; }
+
+    case "bone_harvester": {
+      const n=Math.min(3,P.hand.length);
+      if(!n){ say("r","  your hand is empty"); return true; }
+      for(let i=0;i<n;i++) P.disc.push(P.hand.splice(0,1)[0]);
+      say("d",`  discarded ${n} from hand as the cost`);
+      payAndSpawn(me,n,"Zombie Token",null);
+      return true; }
+
+    case "charnel_sovereign": {
+      // cost may be split across banish / discard / mill; take what is there
+      let paid=0;
+      while(paid<4){
+        if(P.disc.length){ P.banish.push(P.disc.pop()); paid++; continue; }
+        if(P.hand.length){ P.disc.push(P.hand.splice(0,1)[0]); paid++; continue; }
+        if(P.deck.length){ P.disc.push(P.deck.pop()); paid++; continue; }
+        break;
+      }
+      say("d",`  paid ${paid} across banish, discard and mill`);
+      payAndSpawn(me,paid,"Skeleton Knight Token",null);
+      return true; }
+
+    case "fetch_magma_mine": {
+      let i=P.deck.findIndex(x=>x.name==="Magma Mine"), from="deck";
+      if(i<0){ i=P.disc.findIndex(x=>x.name==="Magma Mine"); from="disc"; }
+      if(i<0){ say("r","  no Magma Mine in your deck or Discard pile"); return true; }
+      P.hand.push(P[from].splice(i,1)[0]);
+      say("g",`  added Magma Mine to your hand from your ${from==="deck"?"deck":"Discard pile"}`);
+      return true; }
+
+    case "peek_top": {
+      const v=roll();
+      if(v===1||v===3||v===5){
+        const top=F.deck[F.deck.length-1];
+        say("g",`  ${v} — the top of their deck is ${top?top.name:"(empty)"}, left on top`);
+      } else say("r","  nothing happens");
+      return true; }
+
+    case "cavalry_self_summon": {
+      if(P.hand.length<2){ say("r","  you need 2 cards to discard"); return true; }
+      const inHand = ctx && ctx.zone==="hand";
+      pickSquare("choose an empty Barracks square",
+        (r,c,u2)=>!u2 && canSummonAt(r,c,me),
+        (sel)=>{ if(!sel) return render();
+          for(let i=0;i<2;i++) P.disc.push(P.hand.splice(Math.random()*P.hand.length|0,1)[0]);
+          say("d","  discarded 2 cards as the cost");
+          let src=null;
+          const hi=P.hand.findIndex(x=>x.id===card.id);
+          if(hi>=0) src=P.hand.splice(hi,1)[0];
+          else { const di=P.disc.findIndex(x=>x.id===card.id);
+                 if(di>=0) src=P.disc.splice(di,1)[0]; }
+          if(!src){ say("r","  could not find the card"); return render(); }
+          const {r,c}=sel[0];
+          G.board[r][c]=unit(me,[src],{sick:true,tapped:true});
+          say("g",`  Special Summon ${src.name} to ${rcName(r,c)}`);
+          render(); });
+      return true; }
 
     case "odd_snipe": {                       // Elvish Sniper
       const v=roll();
@@ -1787,6 +2092,14 @@ function renderSelBar(){
   const PH=["Draw","Recruitment","Battle","End"];
   const hints=["","summon, evolve, and activate Skills — click a Unit to reach its Skill",
                "click a Unit, then a highlighted square to move, attack, or strike the Tower",""];
+  if(G.pick){
+    bar.innerHTML=`<span class="phaseNow">Choose</span>
+      <span class="who2">${esc(G.pick.prompt)}</span>
+      <span class="hint">${G.pick.taken.length}/${G.pick.need} chosen</span>
+      <span class="spacer"></span>
+      <button class="bigbtn" onclick="cancelPick()">Cancel</button>`;
+    return;
+  }
   let mid="";
   const u = G.sel && G.board[G.sel.r][G.sel.c];
   if(u && u.fd){
@@ -1877,6 +2190,11 @@ function render(){
       const dd=G.deaths.find(x=>x.r===r&&x.c===c&&Date.now()-x.at<900);
       if(dd){ const g=document.createElement("div"); g.className="death";
               g.textContent="DESTROYED"; d.appendChild(g); }
+    }
+    if(!a && G.pick && G.pick.filter(r,c,u)){
+      const nm=document.createElement("span"); nm.className="tmark t";
+      nm.textContent = G.pick.taken.some(t=>t.r===r&&t.c===c) ? "CHOSEN" : "CHOOSE";
+      d.appendChild(nm);
     }
     if(a){
       const nm=document.createElement("span");
