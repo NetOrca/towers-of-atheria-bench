@@ -298,6 +298,9 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .roll.win{color:#a8e39b;text-shadow:0 0 24px rgba(110,220,120,.55),0 2px 4px #000}
 .roll.lose{color:#e08a7c;text-shadow:0 0 24px rgba(220,90,70,.5),0 2px 4px #000}
 .roll.tower{color:#f2d97a;text-shadow:0 0 26px rgba(240,200,60,.6),0 2px 4px #000}
+/* A parried roll is neither a win nor a loss. Colouring the archer's number
+   red said "you lost" about a Unit that survived. */
+.roll.parry{color:#bcd3e8;text-shadow:0 0 22px rgba(150,200,255,.5),0 2px 4px #000}
 /* Snap in fast, then HOLD at full opacity for ~2s so the number is actually
    readable, then leave. Long enough to read, short enough that it is gone
    well before the next action. */
@@ -311,6 +314,16 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 @media (prefers-reduced-motion:reduce){ .roll{animation:none;opacity:1} }
 
 /* ---- destruction: shake, red flash, then fade ---- */
+.parried{position:absolute;inset:2px;border-radius:2px;pointer-events:none;
+  background:rgba(60,90,140,.5);border:2px solid #8fc4ff;
+  display:grid;place-items:center;font-family:var(--ui);font-weight:700;font-size:.78em;
+  color:#fff;text-shadow:0 1px 3px #000;animation:parried 1100ms ease-out forwards}
+@keyframes parried{
+  0%{opacity:0;transform:scale(1.15)}
+  14%{opacity:1;transform:scale(1)}
+  72%{opacity:1}
+  100%{opacity:0;transform:scale(1.06)}
+}
 .death{position:absolute;inset:2px;border-radius:2px;pointer-events:none;
   background:rgba(180,50,40,.55);border:2px solid #e06a58;
   display:grid;place-items:center;font-family:var(--ui);font-weight:700;font-size:.8em;
@@ -1299,8 +1312,17 @@ function finishAttack(s,a,u,d,A,D,am,dm,defWasFaceDown){
     const me=u.own;
     if(u.nextRollMod){ say("r",`  ${label(u)} is rolling at ${u.nextRollMod} from a trap`); u.nextRollMod=0; }
     say("",`  ${dieTxt(u)}${fmtMod(am)} = ${A.total}   vs   ${dieTxt(d)}${fmtMod(dm)} = ${D.total}`);
-    flyRoll(me, A.total, "attacker", A.total>D.total?"win":A.total<D.total?"lose":"");
-    flyRoll(d.own, D.total, "defender", D.total>A.total?"win":D.total<A.total?"lose":"");
+    // colours are decided AFTER the parry rule, not before it
+    const _atRange = !!a.far;
+    const _parry   = _atRange && isRanged(u) && d.cards.every(c=>c.attack==="melee")
+                     && !(A.total>D.total);
+    if(_parry){
+      flyRoll(me,    A.total, "parried", "parry");
+      flyRoll(d.own, D.total, "parried", "parry");
+    } else {
+      flyRoll(me, A.total, "attacker", A.total>D.total?"win":A.total<D.total?"lose":"");
+      flyRoll(d.own, D.total, "defender", D.total>A.total?"win":D.total<A.total?"lose":"");
+    }
     /* RANGED PARRY  (rulebook lines 197-206, 405-406)
        A Ranged Unit striking a Melee Unit at EXTENDED reach must roll strictly
        higher, or the Melee Unit parries and nobody dies. The Ranged Unit is
@@ -1318,6 +1340,7 @@ function finishAttack(s,a,u,d,A,D,am,dm,defWasFaceDown){
         verdict="RANGED STRIKE LANDS"; vc="v-win"; kill(a.r,a.c);
       } else {
         verdict="PARRIED — NOBODY FALLS"; vc="v-tie";
+        markParry(a.r,a.c);
         say("r","  PARRY — the Ranged attacker did not roll strictly higher, so the "
               +"Melee Unit turns it aside. At range the archer is never at risk.");
       }
@@ -1849,6 +1872,7 @@ function flyRoll(player, total, label, cls){
    and render() rebuilds the board from scratch. render() draws a transient
    ghost over the now-empty square. */
 function markDeath(r,c,name){ (G.deaths=G.deaths||[]).push({r,c,name,at:Date.now()}); }
+function markParry(r,c){ (G.parries=G.parries||[]).push({r,c,at:Date.now()}); }
 
 /* ---- zone piles ---------------------------------------------------
    Discard and Banish are real zones with real cards, and several designs
@@ -2454,6 +2478,7 @@ function fitBoard(){
 function render(){
   if(!G) return;
   if(G.deaths) G.deaths=G.deaths.filter(x=>Date.now()-x.at<1200);
+  if(G.parries) G.parries=G.parries.filter(x=>Date.now()-x.at<1400);
   const PH=["Draw","Recruitment","Battle","End"];
   $("whoTurn").textContent=`P${G.cur} · ${G.P[G.cur].name} · turn ${G.turn}`;
   $("phaseTag").textContent=PH[G.phase];
@@ -2487,6 +2512,11 @@ function render(){
            ${unsim?'<div class="fxq">?</div>':""}`;
       un.title = u.fd?"face-down Unit":u.cards.map(x=>x.name+" — "+(x.skill||"no effect")).join("\n");
       d.appendChild(un);
+    }
+    if(G.parries&&G.parries.length){
+      const pp=G.parries.find(x=>x.r===r&&x.c===c&&Date.now()-x.at<1100);
+      if(pp){ const g=document.createElement("div"); g.className="parried";
+              g.textContent="PARRIED"; d.appendChild(g); }
     }
     if(G.deaths&&G.deaths.length){
       const dd=G.deaths.find(x=>x.r===r&&x.c===c&&Date.now()-x.at<900);
