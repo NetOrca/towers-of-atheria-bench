@@ -1499,6 +1499,7 @@ function npcResolvePrompts(){
       continue;
     }
     if(PICKCARD_CB){ const cb=PICKCARD_CB; PICKCARD_CB=null; closeModal(); cb(0); continue; }
+    if(PICKZ){ pzPick(0); continue; }
     if(SOV_STATE){ SOV_STATE.banish=Math.min(2,G.P[SOV_STATE.me].disc.length); sovPay(); continue; }
     break;
   }
@@ -1798,19 +1799,22 @@ function onDeath(card, owner, r, c){
   switch(card.fx){
     case "death_search_dungeon": case "death_search_lava": {
       const want=card.fx.endsWith("lava")?"lava":"dungeon";
-      const i=P.deck.findIndex(x=>x.dweller===want && x.tier<=2);
-      if(i>=0){ P.hand.push(P.deck.splice(i,1)[0]);
-        say("g",`  ${card.name}: searched out ${P.hand[P.hand.length-1].name}`); }
-      else say("r",`  ${card.name}: no Tier 1-2 ${want} Dweller left in the deck`);
+      pickFromZones(`${card.name} — search your deck for a Tier 1-2 ${CAP(want)} Dweller`,
+        owner, ["deck"], FILT.dweller(want,2),
+        (got)=>{ if(!got) return render();
+          P.hand.push(got.card); say("g",`  recovered ${got.card.name}`); render(); });
       break; }
     case "on_death_recur_forest": {
-      const i=P.disc.findIndex(x=>x.dweller==="forest" && x.tier<=2);
-      if(i>=0){ P.hand.push(P.disc.splice(i,1)[0]);
-        say("g",`  ${card.name}: recovered ${P.hand[P.hand.length-1].name} from the Discard`); }
+      pickFromZones(`${card.name} — take a Tier 1-2 Forest Dweller from your Discard`,
+        owner, ["disc"], FILT.dweller("forest",2),
+        (got)=>{ if(!got) return render();
+          P.hand.push(got.card); say("g",`  recovered ${got.card.name}`); render(); });
       break; }
     case "death_fetch_mine": {
-      const i=P.deck.findIndex(x=>x.name==="Magma Mine");
-      if(i>=0){ P.hand.push(P.deck.splice(i,1)[0]); say("g","  added Magma Mine to hand"); }
+      pickFromZones(`${card.name} — add a Magma Mine to your hand`,
+        owner, ["deck"], FILT.named("Magma Mine"),
+        (got)=>{ if(!got) return render();
+          P.hand.push(got.card); say("g","  added Magma Mine to hand"); render(); });
       break; }
     case "death_lava_swing": {
       for(const p of around(r,c)){
@@ -1849,9 +1853,12 @@ function combatTriggers(atkU, defU, A, D, s, a){
   }
   // Monastery Protector: a kill pulls a card back from the Discard
   if(has(atkU,"on_kill_recur_choice") && A.total>D.total){
-    const P=G.P[atkU.own];
-    if(P.disc.length){ P.deck.push(P.disc.pop());
-      say("g","  Monastery Protector: returned a card from the Discard to the deck"); }
+    const owner=atkU.own;
+    pickFromZones("Monastery Protector — return a card of your choice to your deck",
+      owner, ["disc"], FILT.any,
+      (got)=>{ if(!got) return render();
+        G.P[owner].deck.push(got.card); shuffle(G.P[owner].deck);
+        say("g",`  returned ${got.card.name} to the deck`); render(); });
   }
   return killed;
 }
@@ -1982,30 +1989,20 @@ function ascend(card, ctx){
       const top=Math.max(...stack.cards.map(x=>x.tier));
       const crypt = card.fx==="ascend_crypt_caller";
       const wantTier = top+1;
-      // gather every legal candidate across the allowed zones
-      const opts=[];
-      for(const z of zones) P[z].forEach((cd,i)=>{
-        const ok = crypt ? cd.dweller==="dungeon" : cd.tier===wantTier;
-        if(ok) opts.push({zone:z,i,cd});
-      });
-      if(!opts.length){
-        say("r",`  nothing to summon — needed ${crypt?"a Dungeon Dweller":"a Tier "+wantTier+" Unit"} in your ${zones.map(z=>ZONE_NAME[z]).join(" or ")}`);
-        return render();
-      }
-      pickCard(crypt?"Summon a Dungeon Dweller from your Discard"
-                    :`Summon a Tier ${wantTier} Unit`,
-        opts.map(o=>o.cd),
-        (idx)=>{
-          if(idx===null) return render();
-          const pickOpt=opts[idx];
+      const legal = crypt ? (c)=>c.dweller==="dungeon" : (c)=>c.tier===wantTier;
+      pickFromZones(
+        crypt ? "Summon a Dungeon Dweller from your Discard"
+              : `Summon a Tier ${wantTier} Unit`,
+        me, zones, legal,
+        (got)=>{
+          if(!got) return render();
           say("h",`ASCENSION — ${label(stack)} is sacrificed`);
           doKill(r,c,"sacrificed for Ascension",true);
-          const cd=P[pickOpt.zone].splice(pickOpt.i,1)[0];
-          G.board[r][c]=unit(me,[cd],{sick:true,tapped:true});
-          say("g",`  Special Summon ${cd.name} from your ${ZONE_NAME[pickOpt.zone]} to ${rcName(r,c)}`);
+          G.board[r][c]=unit(me,[got.card],{sick:true,tapped:true});
+          say("g",`  Special Summon ${got.card.name} from your ${ZONE_TITLE[got.zone]} to ${rcName(r,c)}`);
           render();
         },
-        `from your ${zones.map(z=>ZONE_NAME[z]).join(" or ")}`);
+        `one Tier above the stack's highest`);
     });
   return true;
 }
@@ -2127,6 +2124,79 @@ function sovPay(){
 }
 window.sovAdd=sovAdd; window.sovPay=sovPay; window.sovCancel=sovCancel;
 
+
+/* ===================================================================
+   ZONE SEARCH  —  the difference between DRAWING and SEARCHING
+   Draw power takes the top of the deck, sight unseen. A SEARCH lets the
+   player read the zone and choose, limited to what the card can legally
+   take. Picking at random was wrong on both counts: it removed the
+   decision, and it hid which cards an effect could reach.
+   Only legal targets are listed, so the card teaches its own limits.
+   =================================================================== */
+const ZONE_TITLE={deck:"Deck", disc:"Discard", hand:"Hand", banish:"Banished"};
+const CAP=s=>s.charAt(0).toUpperCase()+s.slice(1);
+let PICKZ=null;
+
+function pickFromZones(title, player, zones, filter, cb, note){
+  const avail = zones.map(z=>({
+    z,
+    cards: (G.P[player][z]||[]).map((c,i)=>({c,i})).filter(x=>filter(x.c, z))
+  }));
+  const total = avail.reduce((n,a)=>n+a.cards.length,0);
+  if(!total){
+    say("r",`  ${title} — nothing legal in your `
+            + zones.map(z=>ZONE_TITLE[z]).join(" or "));
+    return cb(null);
+  }
+  PICKZ={title, player, avail, cb, note,
+         tab: avail.findIndex(a=>a.cards.length)};
+  drawPickZones();
+}
+
+function drawPickZones(){
+  const P=PICKZ; if(!P) return;
+  const tabs = P.avail.map((a,i)=>
+    `<button class="bigbtn${i===P.tab?" go":""}" onclick="pzTab(${i})"
+       ${a.cards.length?"":"disabled"}>${ZONE_TITLE[a.z]} <b>${a.cards.length}</b></button>`
+  ).join("");
+  const list = P.avail[P.tab].cards.map((x,n)=>`
+    <div class="zrow">
+      <span class="zn">${esc(x.c.name)}</span>
+      <span class="zt">T${x.c.tier} · ${esc(x.c.dweller)} · ${esc(x.c.attack)}</span>
+      <button class="bigbtn go" onclick="pzPick(${n})">Take</button>
+    </div>`).join("");
+  modal(`<div class="sheet"><h2>${esc(P.title)}</h2>
+    ${P.note?`<div class="stat">${esc(P.note)}</div>`:""}
+    ${P.avail.length>1?`<div class="row" style="margin-top:.2em">${tabs}</div>`:""}
+    <div class="zlist">${list}</div>
+    <div class="row"><button class="bigbtn" onclick="pzCancel()">Cancel</button></div>
+  </div>`);
+}
+function pzTab(i){ if(PICKZ){ PICKZ.tab=i; drawPickZones(); } }
+function pzPick(n){
+  const P=PICKZ; if(!P) return; PICKZ=null; closeModal();
+  const slot=P.avail[P.tab], entry=slot.cards[n];
+  const card=G.P[P.player][slot.z].splice(entry.i,1)[0];
+  // Searching the deck reveals its order, so it is shuffled afterwards.
+  if(slot.z==="deck") shuffle(G.P[P.player].deck);
+  P.cb({card, zone:slot.z});
+  render();
+}
+function pzCancel(){ const P=PICKZ; PICKZ=null; closeModal(); if(P) P.cb(null); render(); }
+window.pzTab=pzTab; window.pzPick=pzPick; window.pzCancel=pzCancel;
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;
+  [a[i],a[j]]=[a[j],a[i]];} return a; }
+
+/* Shorthand filters for the search cards.
+   NOT called F - runActive already binds F to the opposing player, and the
+   local would shadow this silently. */
+const FILT={
+  dweller:(d,maxT)=>(c)=>c.dweller===d && c.tier<=maxT,
+  named:(n)=>(c)=>c.name===n,
+  any:()=>true,
+};
+
 /* ---- roll-based and targeted Active Skills ------------------------- */
 function d(n){ return 1+(Math.random()*n|0); }
 function enemyUnits(p){ return unitsOf(p===1?2:1); }
@@ -2187,11 +2257,13 @@ function runActive(card, ctx){
       return true;
 
     case "fetch_magma_mine": {
-      let i=P.deck.findIndex(x=>x.name==="Magma Mine"), from="deck";
-      if(i<0){ i=P.disc.findIndex(x=>x.name==="Magma Mine"); from="disc"; }
-      if(i<0){ say("r","  no Magma Mine in your deck or Discard pile"); return true; }
-      P.hand.push(P[from].splice(i,1)[0]);
-      say("g",`  added Magma Mine to your hand from your ${from==="deck"?"deck":"Discard pile"}`);
+      pickFromZones("Add a Magma Mine to your hand",
+        me, ["deck","disc"], FILT.named("Magma Mine"),
+        (got)=>{ if(!got) return render();
+          P.hand.push(got.card);
+          say("g",`  added Magma Mine to your hand from your ${ZONE_TITLE[got.zone]}`);
+          render(); },
+        "deck or Discard pile");
       return true; }
 
     case "peek_top": {
@@ -2294,57 +2366,71 @@ function runActive(card, ctx){
       for(let i=0;i<2&&P.deck.length;i++) P.hand.push(P.deck.pop());
       say("g","  shuffled 2 back and drew 2"); return true; }
 
-    case "recur_honor_to_deck": {             // Steadfast Warden
-      const i=P.disc.findIndex(x=>x.dweller==="honor");
-      if(i>=0){ P.deck.push(P.disc.splice(i,1)[0]);
-        say("g",`  returned ${P.deck[P.deck.length-1].name} to the deck`); }
-      else say("r","  no Honor Dweller in your Discard pile");
+    case "recur_honor_to_deck": {
+      pickFromZones("Return an Honor Dweller to your deck",
+        me, ["disc"], (c)=>c.dweller==="honor",
+        (got)=>{ if(!got) return render();
+          P.deck.push(got.card); shuffle(P.deck);
+          say("g",`  returned ${got.card.name} to the deck`); render(); });
       return true; }
 
-    case "recruit_recur_any": {               // Monastery Scholar
-      if(P.disc.length){ P.deck.push(P.disc.pop());
-        for(let i=P.deck.length-1;i>0;i--){const j=Math.random()*(i+1)|0;
-          [P.deck[i],P.deck[j]]=[P.deck[j],P.deck[i]];}
-        say("g",`  returned a card to the deck and shuffled`); }
-      else say("r","  your Discard pile is empty");
+    case "recruit_recur_any": {
+      pickFromZones("Return a card from your Discard to your deck",
+        me, ["disc"], FILT.any,
+        (got)=>{ if(!got) return render();
+          P.deck.push(got.card); shuffle(P.deck);
+          say("g",`  returned ${got.card.name} to the deck and shuffled`); render(); });
       return true; }
 
-    case "unbanish_to_hand": {                // Silverlight Dancer
-      if(P.banish.length){ P.hand.push(P.banish.pop());
-        say("g",`  returned ${P.hand[P.hand.length-1].name} from Banished to your hand`); }
-      else say("r","  nothing is banished");
+    case "unbanish_to_hand": {
+      pickFromZones("Return a banished Unit to your hand",
+        me, ["banish"], FILT.any,
+        (got)=>{ if(!got) return render();
+          P.hand.push(got.card);
+          say("g",`  returned ${got.card.name} from Banished to your hand`); render(); });
       return true; }
 
     case "search_summon_dungeon": case "search_summon_lava":
     case "search_banish_dungeon": case "search_banish_lava":
     case "search_discard_dungeon": case "search_discard_lava": {
-      const want=card.fx.endsWith("lava")?"lava":"dungeon";
-      const maxT=card.fx.includes("summon")?3:4;
-      const i=P.deck.findIndex(x=>x.dweller===want && x.tier<=maxT);
-      if(i<0){ say("r",`  no Tier 1-${maxT} ${want} Dweller left in the deck`); return true; }
-      P.hand.push(P.deck.splice(i,1)[0]);
-      say("g",`  searched out ${P.hand[P.hand.length-1].name}`);
-      if(card.fx.startsWith("search_banish") && ctx && ctx.zone==="disc"){
-        P.banish.push(P.disc.splice(ctx.index,1)[0]); say("d","  this card is banished as the cost");
-      }
-      if(card.fx.startsWith("search_discard")) discardFromHand(card);
+      const want = card.fx.endsWith("lava") ? "lava" : "dungeon";
+      const maxT = card.fx.includes("summon") ? 3 : 4;
+      pickFromZones(`Search your deck for a Tier 1-${maxT} ${CAP(want)} Dweller`,
+        me, ["deck"], FILT.dweller(want,maxT),
+        (got)=>{ if(!got) return render();
+          P.hand.push(got.card);
+          say("g",`  searched out ${got.card.name}`);
+          // pay the cost only once the search actually resolves
+          if(card.fx.startsWith("search_banish") && ctx && ctx.zone==="disc"){
+            const i=P.disc.findIndex(x=>x.id===card.id);
+            if(i>=0){ P.banish.push(P.disc.splice(i,1)[0]);
+              say("d","  this card is banished as the cost"); }
+          }
+          if(card.fx.startsWith("search_discard")) discardFromHand(card);
+          render(); },
+        "only Units this card can legally take are shown");
       return true; }
 
-    case "search_forest_low": {               // Elvish Beast Caller
-      const i=P.deck.findIndex(x=>x.dweller==="forest" && x.tier<=2);
-      if(i>=0){ P.hand.push(P.deck.splice(i,1)[0]);
-        say("g",`  searched out ${P.hand[P.hand.length-1].name}`); }
-      else say("r","  no Tier 1-2 Forest Dweller left");
+    case "search_forest_low": {
+      pickFromZones("Search your deck for a Tier 1-2 Forest Dweller",
+        me, ["deck"], FILT.dweller("forest",2),
+        (got)=>{ if(!got) return render();
+          P.hand.push(got.card); say("g",`  searched out ${got.card.name}`); render(); });
       return true; }
 
-    case "raise_t1_from_discard": {           // Lich King
-      const i=P.disc.findIndex(x=>x.dweller==="dungeon" && x.tier===1);
-      if(i<0){ say("r","  no Tier 1 Dungeon Dweller in your Discard pile"); return true; }
-      const free=[]; for(let r2=0;r2<6;r2++)for(let c2=0;c2<5;c2++) if(canSummonAt(r2,c2,me)) free.push({r:r2,c:c2});
+    case "raise_t1_from_discard": {
+      const free=[]; for(let r2=0;r2<6;r2++)for(let c2=0;c2<5;c2++)
+        if(canSummonAt(r2,c2,me)) free.push({r:r2,c:c2});
       if(!free.length){ say("r","  no empty Barracks square"); return true; }
-      const cd=P.disc.splice(i,1)[0];
-      G.board[free[0].r][free[0].c]=unit(me,[cd],{sick:true,tapped:true});
-      say("g",`  raised ${cd.name} to ${rcName(free[0].r,free[0].c)}`);
+      pickFromZones("Raise a Tier 1 Dungeon Dweller from your Discard",
+        me, ["disc"], (c)=>c.dweller==="dungeon" && c.tier===1,
+        (got)=>{ if(!got) return render();
+          pickSquare("choose an empty Barracks square for it",
+            (r,c2,u2)=>!u2 && canSummonAt(r,c2,me),
+            (sel)=>{ if(!sel){ P.disc.push(got.card); return render(); }
+              const {r,c:cc}=sel[0];
+              G.board[r][cc]=unit(me,[got.card],{sick:true,tapped:true});
+              say("g",`  raised ${got.card.name} to ${rcName(r,cc)}`); render(); }); });
       return true; }
 
     case "banish_for_zombie": {               // Charnel Warden
