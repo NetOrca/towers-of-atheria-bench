@@ -28,7 +28,7 @@
   --ink:#1c1710; --parch:#e8dcc0; --parch2:#d8c9a6; --edge:#6b5a3e;
   --p1:#3f6fa8; --p2:#b4762c; --gold:#c9a227; --bad:#8a3f36; --good:#4a7c46;
   --panel:#211c15; --panel2:#2c251b; --dim:#8a7a5e;
-  --u: clamp(68px, 10.5vmin, 124px);    /* board square */
+  --u: clamp(74px, min(12.5vw, 13.5vh), 158px);  /* board square */
   --pad: clamp(6px, 1.2vmin, 14px);
   --fs: clamp(14px, 1.75vmin, 19px);
   --ui: system-ui,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
@@ -79,7 +79,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 /* =========================== deck builder ============================ */
 #builder .body{flex:1;display:flex;min-height:0}
 #pool{flex:1;overflow-y:auto;padding:var(--pad);display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:var(--pad);align-content:start}
+  grid-template-columns:repeat(auto-fill,minmax(208px,1fr));gap:var(--pad);align-content:start}
 #side{width:min(330px,34vw);background:var(--panel);border-left:1px solid #000;
   display:flex;flex-direction:column;min-height:0}
 #side .hd{padding:var(--pad) calc(var(--pad)*1.4);border-bottom:1px solid #000}
@@ -95,17 +95,18 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 /* card tile */
 .tile{background:linear-gradient(160deg,var(--parch),var(--parch2));color:var(--ink);
   border:1px solid #000;border-radius:4px;padding:7px 8px;position:relative;
-  display:flex;flex-direction:column;gap:4px;min-height:118px;transition:.1s}
+  display:flex;flex-direction:column;gap:5px;min-height:172px;padding-bottom:26px;transition:.1s}
 .tile:hover{transform:translateY(-2px);box-shadow:0 4px 12px #0009}
 .tile .nm{font-weight:700;font-size:1.02em;line-height:1.15;padding-right:2.1em}
 .tile .mt{font-family:var(--ui);font-size:.86em;color:#6a5c42}
-.tile .sk{font-size:.86em;line-height:1.3;color:#3d3527;flex:1}
+.tile .sk{font-size:.88em;line-height:1.34;color:#1f1a13;flex:1;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical}
 .tile .tr{position:absolute;top:5px;right:6px;width:1.85em;height:1.85em;border-radius:50%;
   background:#1c1710;color:var(--parch);display:grid;place-items:center;font-size:.8em;font-weight:700}
-.tile .cnt{position:absolute;bottom:5px;right:6px;background:#1c1710;color:var(--gold);
+.tile .cnt{position:absolute;bottom:6px;right:34px;background:#1c1710;color:var(--gold);
   border-radius:3px;padding:.05em .5em;font-size:.82em;font-weight:700}
 .tile.dim{opacity:.42}
-.tile .rar{position:absolute;bottom:6px;left:7px;width:.62em;height:.62em;transform:rotate(45deg);
+.tile .rar{position:absolute;bottom:9px;left:8px;width:.62em;height:.62em;transform:rotate(45deg);
   border:1px solid #1c1710}
 .r-common{background:#efe7d4}.r-uncommon{background:#b07b2e}.r-rare{background:#3f6fa8}
 .r-epic{background:#7b4a9c}.r-legendary{background:#fff}.r-token{background:#5c5c5c}
@@ -160,10 +161,10 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .l-d{color:#a2937a}.l-g{color:#8fbe86}.l-r{color:#d2a35c}.l-k{color:#d98476}
 #hand{display:flex;gap:8px;padding:var(--pad);background:var(--panel2);
   border:1px solid var(--edge);border-radius:3px;width:100%;max-width:min(100%,1100px);
-  overflow-x:auto;overflow-y:hidden;flex:0 0 auto;min-height:7em;align-items:flex-start}
+  overflow-x:auto;overflow-y:hidden;flex:0 0 auto;min-height:9.5em;align-items:flex-start}
 #hand::-webkit-scrollbar{height:7px}
 #hand::-webkit-scrollbar-thumb{background:#4a4030;border-radius:4px}
-.hcard{flex:0 0 auto;width:clamp(118px,15vmin,168px);font-family:var(--ui);background:linear-gradient(160deg,var(--parch),var(--parch2));
+.hcard{flex:0 0 auto;width:clamp(150px,17vmin,196px);font-family:var(--ui);background:linear-gradient(160deg,var(--parch),var(--parch2));
   color:var(--ink);border:1px solid #000;border-radius:3px;padding:4px 5px;cursor:grab;
   position:relative;font-size:.86em}
 .hcard:hover{transform:translateY(-3px)}
@@ -173,7 +174,7 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .hcard .hm{font-size:.86em;color:#6a5c42}
 .hcard .tr{position:absolute;top:3px;right:4px;width:1.6em;height:1.6em;border-radius:50%;
   background:#1c1710;color:var(--parch);display:grid;place-items:center;font-size:.76em;font-weight:700}
-.acts{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
+.acts{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
 .acts button{font-family:var(--ui);font-size:.88em;padding:.42em .8em;min-height:2.3em;
   border:1px solid #6b5a3e;border-radius:3px;background:#0000001a;font-weight:600}
 .acts button:hover{background:#0002}
@@ -191,6 +192,34 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .who{font-size:.84em;color:var(--dim);text-align:center;max-width:13em}
 .verdict{text-align:center;font-weight:700;margin-top:.25em;letter-spacing:.08em}
 .v-win{color:var(--good)}.v-lose{color:var(--bad)}.v-tie{color:var(--gold)}.v-tower{color:var(--gold)}
+
+
+/* big, phone-friendly action buttons — these are the game's real tutorial */
+.bigbtn{font-family:var(--ui);font-weight:700;font-size:.95em;letter-spacing:.03em;
+  padding:.55em .9em;min-height:44px;min-width:64px;border-radius:5px;
+  border:1px solid #6b5a3e;background:linear-gradient(#f0e7d0,#d9c9a4);color:#1c1710}
+.bigbtn:hover{background:linear-gradient(#fff8e6,#e6d7b4);border-color:var(--gold)}
+.bigbtn.skill{background:linear-gradient(#4a3f22,#332b18);color:var(--parch);border-color:var(--gold)}
+.bigbtn.go{background:linear-gradient(#4a7c46,#335c30);color:#fff;border-color:#6cbf63}
+.tile .info{position:absolute;bottom:5px;right:6px;width:26px;height:26px;border-radius:50%;
+  background:#1c1710;color:var(--gold);font-weight:700;display:grid;place-items:center;
+  font-family:var(--ui);font-size:.9em;border:1px solid #6b5a3e}
+.tile .info:hover{background:var(--gold);color:#1c1710}
+
+#selbar{display:none;gap:.6em;align-items:center;flex-wrap:wrap;justify-content:center;
+  padding:.55em .8em;background:var(--panel2);border:1px solid var(--edge);border-radius:4px;
+  width:100%;max-width:min(100%,1100px);font-family:var(--ui)}
+#selbar.on{display:flex}
+#selbar .who2{font-weight:700;color:var(--parch)}
+
+.sheet{max-width:min(560px,94vw)}
+.sheet .stat{font-family:var(--ui);color:var(--dim);letter-spacing:.1em;
+  text-transform:uppercase;font-size:.85em;margin:.2em 0 .8em}
+.sheet .txt{background:linear-gradient(160deg,var(--parch),var(--parch2));color:#1a150f;
+  border:1px solid #000;border-radius:4px;padding:.9em 1em;max-height:34vh;overflow-y:auto;
+  font-size:1.02em;line-height:1.5}
+.sheet .row{display:flex;gap:.6em;flex-wrap:wrap;margin-top:1em}
+.sheet .note{color:#d2a35c;font-size:.9em;margin-top:.7em;font-family:var(--ui)}
 
 /* modal */
 #modal{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:60;padding:4vmin}
@@ -273,6 +302,7 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
     <div id="boardWrap">
       <div id="fx"></div>
       <div id="board"></div>
+      <div id="selbar"></div>
       <div id="hand"></div>
     </div>
     <div id="side2">
@@ -487,7 +517,9 @@ function renderPool(){
       <div class="sk">${c.skill?esc(c.skill):"<i>no effect</i>"}</div>
       <div class="rar r-${c.rarity}"></div>
       ${c.status!=="final"?'<div class="warn">'+c.status+'</div>':""}
-      ${n?`<div class="cnt">${n}</div>`:""}`;
+      ${n?`<div class="cnt">${n}</div>`:""}
+      <div class="info" title="read the full Skill">i</div>`;
+    d.querySelector(".info").onclick=e=>{ e.stopPropagation(); skillSheet(c,null); };
     d.onclick=()=>{ if(countOf(c.id)<3){ CUR.cards.push(c.id); renderPool(); renderDeck(); } };
     d.oncontextmenu=e=>{ e.preventDefault(); const i=CUR.cards.indexOf(c.id);
       if(i>=0){ CUR.cards.splice(i,1); renderPool(); renderDeck(); } };
@@ -651,7 +683,7 @@ function rollDetail(u,mod){
 
 /* ---- phases ---- */
 function drawPhase(){
-  for(const{u}of unitsOf(G.cur)){ u.tapped=false;u.sick=false;u.moved=false;u.acted=false; }
+  for(const{u}of unitsOf(G.cur)){ u.tapped=false;u.sick=false;u.moved=false;u.acted=false;u.skillUsed=false; }
   const P=G.P[G.cur];
   if(!P.deck.length){ G.over=true;
     say("k",`P${G.cur} cannot draw. P${G.cur===1?2:1} WINS.`); return; }
@@ -904,6 +936,90 @@ function npcTurn(){
   setTimeout(step,420);
 }
 
+
+/* ===================================================================
+   SKILL SHEET + ACTIVATE
+   Active Skills resolve in the Recruitment Phase (rulebook line 477).
+   Effects the engine simulates run for real; the rest are logged as
+   activated and the players resolve them at the table. Either way the
+   player SEES the text and presses a button, which is how this thing
+   teaches the game without a tutorial.
+   =================================================================== */
+let SKILL_CTX=null;
+function skillSheet(card, ctx){
+  SKILL_CTX = ctx || null;                     // {r,c} for a Unit on the field
+  const onField = !!ctx;
+  const u = onField ? G.board[ctx.r][ctx.c] : null;
+  const already = u && u.skillUsed;
+  const rightPhase = G && G.phase===1;
+  const myTurn = !NPC_ON || G.cur===1;
+  const has = card.skill && card.fx!=="vanilla" && card.fx!=="token";
+  const can = has && rightPhase && myTurn && !already && !(G&&G.over);
+
+  let why="";
+  if(!has) why="This Unit has no Skill.";
+  else if(!myTurn) why="It is not your turn.";
+  else if(!rightPhase) why="Active Skills resolve in the Recruitment Phase.";
+  else if(already) why="This Unit already used its Skill this turn.";
+
+  modal(`<div class="sheet">
+    <h2>${esc(card.name)}</h2>
+    <div class="stat">Tier ${card.tier} · ${esc(card.dweller)} · ${esc(card.attack)}
+      · ${card.movable?"movable":"immovable"} · ${esc(card.rarity)} · rolls d${DIE[card.tier]}</div>
+    <div class="txt">${card.skill?esc(card.skill):"<i>No effect. A body and a die.</i>"}</div>
+    ${has&&!SIMULATED.has(card.fx)?
+      '<div class="note">This effect is printed but not simulated yet. Activating it logs the effect so you can resolve it yourselves.</div>':""}
+    ${why?`<div class="note">${esc(why)}</div>`:""}
+    <div class="row">
+      ${can?`<button class="bigbtn go" onclick="doActivate('${card.id}')">Activate</button>`:""}
+      <button class="bigbtn" onclick="closeModal()">Close</button>
+    </div></div>`);
+}
+window.skillSheet=skillSheet;
+
+function doActivate(cardId){
+  const card = BY_ID[cardId]; if(!card) return closeModal();
+  const ctx = SKILL_CTX;
+  const u = ctx ? G.board[ctx.r][ctx.c] : null;
+  say("h",`ACTIVATE ${card.name}`);
+  say("",`  "${card.skill}"`);
+
+  if(SIMULATED.has(card.fx)){
+    // the handful the engine really runs
+    const P=G.P[G.cur];
+    if(card.fx==="on_summon_draw1"||card.fx==="on_normal_summon_draw1"){
+      if(P.deck.length){ P.hand.push(P.deck.pop()); say("g","  drew 1"); }
+    } else if(card.fx==="empty_hand_draw5"){
+      if(!P.hand.length){ for(let i=0;i<5&&P.deck.length;i++) P.hand.push(P.deck.pop());
+        say("g","  hand was empty — drew 5"); }
+      else say("r","  hand is not empty — nothing happens");
+    } else if(AURA[card.fx]){
+      say("g","  this is an always-on aura — it is already applying, no activation needed");
+    }
+  } else {
+    say("r","  NOT SIMULATED — resolve this effect yourselves, then carry on");
+  }
+  if(u){ u.skillUsed=true; }
+  closeModal(); render();
+}
+window.doActivate=doActivate;
+
+function renderSelBar(){
+  const bar=$("selbar");
+  if(!G || !G.sel || !G.board[G.sel.r][G.sel.c]){ bar.className=""; bar.innerHTML=""; return; }
+  const u=G.board[G.sel.r][G.sel.c];
+  if(u.fd){ bar.className="on";
+    bar.innerHTML=`<span class="who2">Face-down Unit at ${rcName(G.sel.r,G.sel.c)}</span>
+      <span class="tag">hidden until it is attacked or flipped</span>`; return; }
+  const m=modAt(G.sel.r,G.sel.c,u);
+  bar.className="on";
+  bar.innerHTML =
+    `<span class="who2">${esc(u.cards.map(c=>c.name).join(" + "))}</span>
+     <span class="tag">${dieTxt(u)}${m?`  ${m>0?"+":""}${m} from auras`:""}
+       ${u.tapped?" · tapped":""}${u.sick?" · morph sick":""}</span>` +
+    u.cards.map(c=>`<button class="bigbtn skill" onclick="skillSheet(BY_ID['${c.id}'],{r:${G.sel.r},c:${G.sel.c}})">Skill: ${esc(c.name.split(",")[0])}</button>`).join("");
+}
+
 /* ===================================================================
    5. RENDER
    =================================================================== */
@@ -948,7 +1064,7 @@ function render(){
     d.ondrop=e=>{ e.preventDefault(); d.classList.remove("drop"); cellClick(r,c); };
     b.appendChild(d);
   }
-  renderHand(); renderLog();
+  renderSelBar(); renderHand(); renderLog();
 }
 function renderHand(){
   const h=$("hand"); h.innerHTML="";
@@ -964,7 +1080,8 @@ function renderHand(){
     d.title=card.skill||"no effect";
     if(G.phase===1){
       const acts=document.createElement("div"); acts.className="acts";
-      const mk=(t,fn)=>{const b=document.createElement("button");b.textContent=t;
+      const mk=(t,fn,cls)=>{const b=document.createElement("button");b.textContent=t;
+        b.className="bigbtn"+(cls?" "+cls:"");
         b.onclick=e=>{e.stopPropagation();fn();};acts.appendChild(b);};
       if(card.tier===1&&!G.summonUsed){ mk("summon",()=>{G.mode={t:"place",card,fd:false,how:"Normal"};render();});
                                         mk("set",()=>{G.mode={t:"place",card,fd:true,how:"Normal"};render();}); }
@@ -973,7 +1090,13 @@ function renderHand(){
           say("d",`select ${tributeCost(card.tier)} of your Units to tribute`);render();});
       if(card.tier>1) mk("evolve",()=>{G.mode={t:"evo",card};
         say("d",`choose a face-up Tier ${card.tier-1} ${card.dweller} Unit you control`);render();});
+      mk("Skill",()=>skillSheet(card,null),"skill");
       d.appendChild(acts);
+    }else{
+      const acts=document.createElement("div"); acts.className="acts";
+      const b=document.createElement("button"); b.textContent="Skill"; b.className="bigbtn skill";
+      b.onclick=e=>{e.stopPropagation();skillSheet(card,null);};
+      acts.appendChild(b); d.appendChild(acts);
     }
     d.ondragstart=()=>{ if(G.phase===1&&card.tier===1&&!G.summonUsed) G.mode={t:"place",card,fd:false,how:"Normal"};
                         render(); };
