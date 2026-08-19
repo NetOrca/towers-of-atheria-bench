@@ -8,9 +8,10 @@
   TOWERS OF ATHERIA: DWELLER CLASH  —  playable browser prototype
   GridOrcaGames
 
-  ONE self-contained file. The card catalog is injected into the <script
-  id="catalog"> block by build_catalog.py - never edit it by hand, re-run
-  the generator instead.
+  ONE self-contained file. The card catalog is generated INTO this file by
+  build_catalog.py - never edit the catalog block by hand, re-run the
+  generator instead. (No script tag is written in this comment on purpose:
+  the injector matches on that tag and would eat its own documentation.)
 
   itch.io: zip this file alone, upload, tick "played in the browser".
   It also runs by double-clicking it straight off your desktop, because
@@ -27,7 +28,7 @@
   --ink:#1c1710; --parch:#e8dcc0; --parch2:#d8c9a6; --edge:#6b5a3e;
   --p1:#3f6fa8; --p2:#b4762c; --gold:#c9a227; --bad:#8a3f36; --good:#4a7c46;
   --panel:#211c15; --panel2:#2c251b; --dim:#8a7a5e;
-  --u: clamp(62px, 9vmin, 112px);       /* board square */
+  --u: clamp(68px, 10.5vmin, 124px);    /* board square */
   --pad: clamp(6px, 1.2vmin, 14px);
   --fs: clamp(14px, 1.75vmin, 19px);
   --ui: system-ui,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
@@ -144,7 +145,8 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
   color:#8a7a5e;box-shadow:0 0 0 2px #55492f}
 .unit.tapped{transform:rotate(90deg)}
 .unit.tapped .un{font-size:.88em}
-.unit .un{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:1em}
+.unit .un{font-weight:600;font-size:.95em;line-height:1.12;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
 .unit .ud{display:flex;justify-content:space-between;align-items:flex-end;font-size:.92em}
 .unit .mod{font-weight:700;color:#2c5c2a}
 .unit .mod.neg{color:var(--bad)}
@@ -166,7 +168,8 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
   position:relative;font-size:.86em}
 .hcard:hover{transform:translateY(-3px)}
 .hcard.picked{outline:2px solid var(--gold)}
-.hcard .hn{font-weight:700;line-height:1.15;font-size:1.02em;padding-right:1.7em}
+.hcard .hn{font-weight:700;line-height:1.15;font-size:1.02em;padding-right:1.7em;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .hcard .hm{font-size:.86em;color:#6a5c42}
 .hcard .tr{position:absolute;top:3px;right:4px;width:1.6em;height:1.6em;border-radius:50%;
   background:#1c1710;color:var(--parch);display:grid;place-items:center;font-size:.76em;font-weight:700}
