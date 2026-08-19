@@ -151,8 +151,12 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .unit.o2{background:linear-gradient(150deg,#e8d6b6,#cfb885);color:#1c1710;box-shadow:0 0 0 2px var(--p2)}
 .unit.fd{background:repeating-linear-gradient(45deg,#3a3020,#3a3020 5px,#332b1c 5px,#332b1c 10px);
   color:#8a7a5e;box-shadow:0 0 0 2px #55492f}
-.unit.tapped{transform:rotate(90deg)}
-.unit.tapped .un{font-size:.88em}
+/* A full 90deg turn is the physical game's language, but the squares are no
+   longer square - rotating a wide box inside it clipped the name. A slight
+   tilt plus a desaturate reads as 'turned sideways' and never clips. */
+.unit.tapped{transform:rotate(6deg);filter:grayscale(.5) brightness(.82)}
+.unit.tapped::after{content:'TAPPED';position:absolute;bottom:1px;left:3px;
+  font-size:.62em;font-weight:800;letter-spacing:.08em;color:#7a3f36}
 .unit .un{font-weight:600;font-size:.95em;line-height:1.12;overflow:hidden;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
 .unit .ud{display:flex;justify-content:space-between;align-items:flex-end;font-size:.92em}
@@ -254,6 +258,68 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .sheet .row{display:flex;gap:.6em;flex-wrap:wrap;margin-top:1em}
 .sheet .note{color:#d2a35c;font-size:.9em;margin-top:.7em;font-family:var(--ui)}
 
+
+/* ---- dice gutters: the dead space either side of the board earns its keep.
+   Rolls fly here, grow, then fade. Left gutter = P1, right = P2. ---- */
+#boardRow{display:flex;align-items:center;justify-content:center;gap:calc(var(--pad)*.6);width:100%}
+.gutter{flex:0 0 auto;width:clamp(78px,11vw,190px);align-self:stretch;position:relative;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.gutter .zlab{position:absolute;top:6px;font-family:var(--ui);font-size:.78em;
+  letter-spacing:.16em;text-transform:uppercase;color:#4a4132}
+.roll{position:absolute;font-family:var(--ui);font-weight:800;line-height:1;
+  animation:rollpop 1.5s ease-out forwards;pointer-events:none;text-align:center;white-space:nowrap}
+.roll .rv{display:block;font-size:clamp(34px,5.4vw,84px)}
+.roll .rl{display:block;font-size:clamp(10px,1.15vw,15px);font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;margin-top:.15em;opacity:.85}
+.roll.p1{color:#8fc4ff;text-shadow:0 0 22px rgba(80,150,255,.55),0 2px 4px #000}
+.roll.p2{color:#ffc98f;text-shadow:0 0 22px rgba(255,160,60,.5),0 2px 4px #000}
+.roll.win{color:#a8e39b;text-shadow:0 0 24px rgba(110,220,120,.55),0 2px 4px #000}
+.roll.lose{color:#e08a7c;text-shadow:0 0 24px rgba(220,90,70,.5),0 2px 4px #000}
+.roll.tower{color:#f2d97a;text-shadow:0 0 26px rgba(240,200,60,.6),0 2px 4px #000}
+@keyframes rollpop{
+  0%  {transform:scale(.35);opacity:0}
+  18% {transform:scale(1.06);opacity:1}
+  32% {transform:scale(1);opacity:1}
+  70% {transform:scale(1);opacity:1}
+  100%{transform:scale(1.5);opacity:0}
+}
+@media (prefers-reduced-motion:reduce){ .roll{animation:none;opacity:1} }
+
+/* ---- destruction: shake, red flash, then fade ---- */
+.death{position:absolute;inset:2px;border-radius:2px;pointer-events:none;
+  background:rgba(180,50,40,.55);border:2px solid #e06a58;
+  display:grid;place-items:center;font-family:var(--ui);font-weight:700;font-size:.8em;
+  color:#fff;text-shadow:0 1px 3px #000;animation:die 900ms ease-out forwards}
+@keyframes die{
+  0%  {opacity:0;transform:translateX(0)}
+  8%  {opacity:1;transform:translateX(-5px)}
+  16% {transform:translateX(5px)}
+  24% {transform:translateX(-4px)}
+  32% {transform:translateX(3px)}
+  40% {transform:translateX(0)}
+  70% {opacity:.9}
+  100%{opacity:0;transform:scale(.8)}
+}
+
+/* ---- zone strip: Deck / Hand / Discard / Banish, both players ---- */
+#zones{display:flex;gap:.5em;align-items:center;flex-wrap:wrap;justify-content:center;
+  width:100%;max-width:min(100%,1250px);font-family:var(--ui);font-size:.9em}
+.zgrp{display:flex;gap:.35em;align-items:center;padding:.3em .6em;border-radius:4px;
+  background:#1b1710;border:1px solid #3a3226}
+.zgrp.p1{border-left:3px solid var(--p1)}
+.zgrp.p2{border-left:3px solid var(--p2)}
+.zbtn{padding:.35em .7em;min-height:34px;border:1px solid #4a4030;border-radius:4px;
+  background:#251f16;color:var(--parch);font-size:.95em}
+.zbtn:hover{border-color:var(--gold);background:#33291b}
+.zbtn b{color:var(--gold)}
+.zbtn.empty{opacity:.45}
+.zstat{color:var(--dim);padding:0 .3em}
+.zlist{display:flex;flex-direction:column;gap:.4em;max-height:50vh;overflow-y:auto;margin-top:.6em}
+.zrow{display:flex;gap:.6em;align-items:center;padding:.45em .6em;border-radius:4px;
+  background:linear-gradient(160deg,var(--parch),var(--parch2));color:#1a150f}
+.zrow .zn{flex:1;font-weight:700}
+.zrow .zt{color:#6a5c42;font-size:.9em}
+
 /* modal */
 #modal{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:60;padding:4vmin}
 #modal.on{display:grid}
@@ -337,8 +403,12 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
   </div>
   <div class="body">
     <div id="boardWrap">
-      <div id="fx"></div>
-      <div id="board"></div>
+      <div id="boardRow">
+        <div class="gutter" id="gutL"><span class="zlab">P1 rolls</span></div>
+        <div id="board"></div>
+        <div class="gutter" id="gutR"><span class="zlab">P2 rolls</span></div>
+      </div>
+      <div id="zones"></div>
       <div id="selbar"></div>
       <div id="hand"></div>
     </div>
@@ -915,6 +985,7 @@ function actionsFrom(r,c){
 /* ---- resolution ---- */
 function kill(r,c,why){
   const u=G.board[r][c]; if(!u)return;
+  markDeath(r,c,u.fd?"face-down":u.cards.map(x=>x.name).join(" + "));
   G.P[u.own].disc.push(...u.cards);
   say("k",`  ${u.fd?"a face-down Unit":label(u)} destroyed${why?" ("+why+")":""}`);
   G.board[r][c]=null;
@@ -942,6 +1013,7 @@ function resolve(s,a){
   }
   if(a.k==="tower"){
     const res=rollDetail(u,modAt(s.r,s.c,u));
+    flyRoll(me,res.total,"Tower strike","tower");
     fxPanel(`<div class="fxrow">
       <div><div class="who">${label(u)}</div>${diceHTML(res,me)}</div>
       <div>→</div><div><div class="who">P${foe} TOWER</div>
@@ -958,6 +1030,8 @@ function resolve(s,a){
     if(u.fd){ u.fd=false; }
     const am=modAt(s.r,s.c,u), dm=modAt(a.r,a.c,d);
     const A=rollDetail(u,am), D=rollDetail(d,dm);
+    flyRoll(me, A.total, "attacker", A.total>D.total?"win":A.total<D.total?"lose":"");
+    flyRoll(d.own, D.total, "defender", D.total>A.total?"win":D.total<A.total?"lose":"");
     say("h",`ATTACK ${label(u)} → ${label(d)}`);
     say("",`  ${dieTxt(u)}${fmtMod(am)} = ${A.total}   vs   ${dieTxt(d)}${fmtMod(dm)} = ${D.total}`);
     let verdict,vc;
@@ -979,8 +1053,8 @@ function diceHTML(res,p){
     `<div class="die p${p}">${d.v}<small>d${d.s}</small></div>`).join("")}</div>`+
     `<div class="sum">${res.base}${fmtMod(res.mod)}${res.dice.length>1||res.mod?" = "+res.total:""}</div>`;
 }
-function fxPanel(html){ $("fx").innerHTML=html; }
-function fxRest(){ $("fx").innerHTML='<div>dice and combat results appear here</div>'; }
+function fxPanel(html){ /* retired - the dice gutters replaced it */ }
+function fxRest(){ /* retired */ }
 
 /* ---- clicking ---- */
 function cellClick(r,c){
@@ -1084,6 +1158,63 @@ function npcTurn(){
 }
 
 
+
+/* ===================================================================
+   VISUAL FEEDBACK  —  dice gutters, death shake, zone piles
+   =================================================================== */
+function flyRoll(player, total, label, cls){
+  const g = $(player===1 ? "gutL" : "gutR");
+  if(!g) return;
+  const el=document.createElement("div");
+  el.className="roll p"+player+(cls?" "+cls:"");
+  el.innerHTML=`<span class="rv">${total}</span>${label?`<span class="rl">${esc(label)}</span>`:""}`;
+  g.appendChild(el);
+  setTimeout(()=>el.remove(),1600);
+}
+/* Deaths are recorded, not animated inline, because resolve() is synchronous
+   and render() rebuilds the board from scratch. render() draws a transient
+   ghost over the now-empty square. */
+function markDeath(r,c,name){ (G.deaths=G.deaths||[]).push({r,c,name,at:Date.now()}); }
+
+/* ---- zone piles ---------------------------------------------------
+   Discard and Banish are real zones with real cards, and several designs
+   activate FROM them (Sepulcher Hunter banishes itself out of the Discard,
+   Silverlight Dancer returns a banished Unit). They have to be openable. */
+const ZONE_LABEL={disc:"Discard pile", banish:"Banished"};
+function renderZones(){
+  const z=$("zones"); if(!z||!G) return;
+  const grp=(p)=>{
+    const P=G.P[p];
+    const pile=(key,name)=>{
+      const n=P[key].length;
+      return `<button class="zbtn${n?"":" empty"}" ${n?`onclick="zoneList(${p},'${key}')"`:"disabled"}>${name} <b>${n}</b></button>`;
+    };
+    return `<div class="zgrp p${p}">
+      <span class="zstat">P${p}</span>
+      <span class="zstat">deck <b style="color:var(--gold)">${P.deck.length}</b></span>
+      <span class="zstat">hand ${P.hand.length}</span>
+      ${pile("disc","Discard")}${pile("banish","Banished")}</div>`;
+  };
+  z.innerHTML = grp(1)+grp(2);
+}
+function zoneList(p, key){
+  const cards=G.P[p][key];
+  if(!cards.length) return;
+  const mine = (!NPC_ON || p===1);
+  modal(`<div class="sheet">
+    <h2>P${p} — ${ZONE_LABEL[key]}</h2>
+    <div class="stat">${cards.length} card${cards.length===1?"":"s"}${mine?"":" · opponent's zone, view only"}</div>
+    <div class="zlist">${cards.map((c,i)=>`
+      <div class="zrow">
+        <span class="zn">${esc(c.name)}</span>
+        <span class="zt">T${c.tier} · ${esc(c.dweller)}</span>
+        ${mine?`<button class="bigbtn skill" onclick="skillSheet(BY_ID['${c.id}'],{zone:'${key}',player:${p},index:${i}})">Skill</button>`:""}
+      </div>`).join("")}</div>
+    <div class="row"><button class="bigbtn" onclick="closeModal()">Close</button></div>
+  </div>`);
+}
+window.zoneList=zoneList;
+
 /* ===================================================================
    SKILL SHEET + ACTIVATE
    Active Skills resolve in the Recruitment Phase (rulebook line 477).
@@ -1094,12 +1225,13 @@ function npcTurn(){
    =================================================================== */
 let SKILL_CTX=null;
 function skillSheet(card, ctx){
-  SKILL_CTX = ctx || null;                     // {r,c} for a Unit on the field
-  const onField = !!ctx;
+  SKILL_CTX = ctx || null;   // {r,c} on the field, or {zone,player,index}
+  const onField = !!(ctx && ctx.r!==undefined);
+  const inZone  = !!(ctx && ctx.zone);
   const u = onField ? G.board[ctx.r][ctx.c] : null;
   const already = u && u.skillUsed;
   const rightPhase = G && G.phase===1;
-  const myTurn = !NPC_ON || G.cur===1;
+  const myTurn = !NPC_ON || G.cur===1 || (inZone && ctx.player===1);
   const has = card.skill && card.fx!=="vanilla" && card.fx!=="token";
   const can = has && rightPhase && myTurn && !already && !(G&&G.over);
 
@@ -1117,6 +1249,7 @@ function skillSheet(card, ctx){
     <div class="txt">${card.skill?esc(card.skill):"<i>No effect. A body and a die.</i>"}</div>
     ${has&&!SIMULATED.has(card.fx)?
       '<div class="note">This effect is printed but not simulated yet. Activating it logs the effect so you can resolve it yourselves.</div>':""}
+    ${inZone?`<div class="note">This card is in your ${esc(ZONE_LABEL[ctx.zone])}. Effects that work from there are legal here.</div>`:""}
     ${why?`<div class="note">${esc(why)}</div>`:""}
     <div class="row">
       ${can?`<button class="bigbtn go" onclick="doActivate('${card.id}')">Activate</button>`:""}
@@ -1191,10 +1324,11 @@ function fitBoard(){
   if(SCREEN!=="game") return;
   const wrap=$("boardWrap"); if(!wrap) return;
   const bar =document.querySelector("#game .bar");
-  const used = (bar?bar.offsetHeight:0) + $("fx").offsetHeight +
-               $("selbar").offsetHeight + $("hand").offsetHeight + 46;
+  const used = (bar?bar.offsetHeight:0) + $("zones").offsetHeight +
+               $("selbar").offsetHeight + $("hand").offsetHeight + 42;
   const byH = Math.floor((innerHeight - used) / 6) - 3;
-  const byW = Math.floor((wrap.clientWidth - 34) / 5) - 3;
+  const gut = ($("gutL")?$("gutL").offsetWidth:0) * 2;
+  const byW = Math.floor((wrap.clientWidth - gut - 34) / 5) - 3;
   const uh = Math.max(46, Math.min(132, byH));
   // Let squares run up to 1.55x wider than tall. Height is the scarce axis
   // (6 rows vs 5 columns), so this spends the leftover width instead of
@@ -1207,6 +1341,7 @@ function fitBoard(){
 
 function render(){
   if(!G) return;
+  if(G.deaths) G.deaths=G.deaths.filter(x=>Date.now()-x.at<1200);
   const PH=["Draw","Recruitment","Battle","End"];
   $("whoTurn").textContent=`P${G.cur} · ${G.P[G.cur].name} · turn ${G.turn}`;
   $("phaseTag").textContent=PH[G.phase];
@@ -1239,13 +1374,18 @@ function render(){
       un.title = u.fd?"face-down Unit":u.cards.map(x=>x.name+" — "+(x.skill||"no effect")).join("\n");
       d.appendChild(un);
     }
+    if(G.deaths&&G.deaths.length){
+      const dd=G.deaths.find(x=>x.r===r&&x.c===c&&Date.now()-x.at<900);
+      if(dd){ const g=document.createElement("div"); g.className="death";
+              g.textContent="DESTROYED"; d.appendChild(g); }
+    }
     d.onclick=()=>cellClick(r,c);
     d.ondragover=e=>{ if(G.mode&&G.mode.t==="place"&&canSummonAt(r,c,G.cur)){e.preventDefault();d.classList.add("drop");} };
     d.ondragleave=()=>d.classList.remove("drop");
     d.ondrop=e=>{ e.preventDefault(); d.classList.remove("drop"); cellClick(r,c); };
     b.appendChild(d);
   }
-  renderSelBar(); renderHand(); renderLog();
+  renderZones(); renderSelBar(); renderHand(); renderLog();
   // synchronous: requestAnimationFrame never fires in a background tab, so a
   // game loaded unfocused would keep the fallback size forever.
   fitBoard();
