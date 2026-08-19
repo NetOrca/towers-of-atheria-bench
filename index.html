@@ -296,6 +296,9 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
           <button class="tbtn" id="loadDeck">Load</button>
           <button class="tbtn" id="setActive">Set Active</button>
           <button class="tbtn" id="clearDeck">Clear</button>
+          <button class="tbtn" id="exportDecks">Export</button>
+          <button class="tbtn" id="importDecks">Import</button>
+          <input type="file" id="importFile" accept=".json,application/json" style="display:none">
         </div>
       </div>
       <div id="deckList"></div>
@@ -608,6 +611,9 @@ $("setActive").onclick=()=>{
   if(!STORE.decks[nm]) return alert("Save the deck first.");
   STORE.active=nm; save(); renderDeck(); flash(`"${nm}" is now your active deck.`);
 };
+$("exportDecks").onclick=exportDecks;
+$("importDecks").onclick=()=>$("importFile").click();
+$("importFile").onchange=e=>{ const f=e.target.files[0]; if(f) importDecks(f); e.target.value=""; };
 $("loadDeck").onclick=()=>{
   const names=Object.keys(STORE.decks);
   if(!names.length) return alert("No saved decks yet.");
@@ -619,6 +625,67 @@ $("loadDeck").onclick=()=>{
 };
 window.pickDeck=n=>{ CUR={name:n,cards:STORE.decks[n].cards.slice()};
   $("deckName").value=n; closeModal(); renderPool(); renderDeck(); };
+
+/* ===================================================================
+   EXPORT / IMPORT
+   A browser page cannot write files to a hard drive, and itch.io has no
+   save API - localStorage is the only persistence available, and it dies
+   with a cleared cache or a new device. So the portable save is a file
+   the PLAYER downloads and loads back: the browser-legal equivalent of
+   save slots you can copy around.
+   =================================================================== */
+function exportDecks(){
+  const names=Object.keys(STORE.decks);
+  if(!names.length) return alert("No decks to export yet.");
+  const payload={
+    format:"towers-of-atheria-decks",
+    version:1,
+    exported:new Date().toISOString(),
+    active:STORE.active,
+    decks:STORE.decks
+  };
+  const blob=new Blob([JSON.stringify(payload,null,1)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="towers-of-atheria-decks.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  flash(`Exported ${names.length} deck(s).`);
+}
+
+function importDecks(file){
+  const rd=new FileReader();
+  rd.onerror=()=>alert("Could not read that file.");
+  rd.onload=()=>{
+    let data;
+    try{ data=JSON.parse(rd.result); }
+    catch(e){ return alert("That file is not valid JSON."); }
+    if(!data || data.format!=="towers-of-atheria-decks" || !data.decks)
+      return alert("That does not look like a Towers of Atheria deck file.");
+
+    // Validate every card id against the current collection. A deck exported
+    // before a card was renamed must not silently become a deck full of holes.
+    const incoming=Object.values(data.decks);
+    let added=0, renamed=0, dropped=0;
+    for(const d of incoming){
+      const good=(d.cards||[]).filter(id=>{ if(BY_ID[id]) return true; dropped++; return false; });
+      let name=d.name||"Imported deck";
+      while(STORE.decks[name]){ name=name+" (imported)"; renamed++; }
+      STORE.decks[name]={name,cards:good};
+      added++;
+    }
+    if(!STORE.active) STORE.active=Object.keys(STORE.decks)[0]||null;
+    save(); renderPool(); renderDeck();
+    let msg=`Imported ${added} deck(s).`;
+    if(renamed) msg+=` ${renamed} renamed to avoid overwriting.`;
+    if(dropped) msg+=` ${dropped} card(s) skipped — not in this collection.`;
+    flash(msg);
+    if(dropped) say && 0;
+  };
+  rd.readAsText(file);
+}
+
 function flash(msg){ const s=$("deckStat"); const d=document.createElement("div");
   d.className="tag"; d.style.color="var(--good)"; d.textContent=msg; s.appendChild(d);
   setTimeout(()=>d.remove(),2600); }
