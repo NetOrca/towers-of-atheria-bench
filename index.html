@@ -400,10 +400,27 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
   .roll .rl{font-size:clamp(11px,3vw,14px)}
   #boardRow{gap:0}
 
-  #selbar{position:sticky;bottom:0;z-index:35;
-    box-shadow:0 -6px 16px rgba(0,0,0,.55);margin-top:auto}
-  #selbar .bigbtn.phase{font-size:1.05em;padding:.6em 1.2em}
-  #hand{position:sticky;bottom:0;z-index:34}
+  /* The action bar becomes a fixed BOTTOM bar, mirroring the top bar, so the
+     two of them frame the field, hand and log between them. Stacked in a
+     column: phase button on top, phase name under it, description last -
+     which also stops the hint running off the edge, because in a row it had
+     to share the line with the button and simply overflowed. */
+  #selbar{position:fixed;left:0;right:0;bottom:0;z-index:60;
+    flex-direction:column;align-items:stretch;gap:.3em;
+    max-width:none;border-radius:0;border-left:none;border-right:none;
+    padding:.5em .7em calc(.5em + env(safe-area-inset-bottom,0px));
+    box-shadow:0 -8px 20px rgba(0,0,0,.6)}
+  #selbar .spacer{display:none}
+  #selbar .bigbtn.phase{order:-1;width:100%;font-size:1.08em;padding:.65em 1em}
+  #selbar .bigbtn.skill{width:100%}
+  #selbar .phaseNow{text-align:center;font-size:.95em}
+  #selbar .who2{text-align:center}
+  #selbar .hint{text-align:center;white-space:normal;line-height:1.35;
+    overflow-wrap:anywhere}
+  /* nothing may hide underneath the fixed bar */
+  #boardWrap{padding-bottom:.4em}
+  #side2{padding-bottom:9.5em}
+  #hand{position:static}
   #zones{font-size:.82em}
   #zones .zgrp{padding:.25em .45em}
   .bar{padding:.45em .6em}
