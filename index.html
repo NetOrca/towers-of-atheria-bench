@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Towers of Atheria — Dweller Clash</title>
+<!--
+  TOWERS OF ATHERIA: DWELLER CLASH  —  playable browser prototype
+  GridOrcaGames
+
+  Single file plus toa_catalog.js. Drop both in a zip, upload to itch.io,
+  tick "played in the browser". No build step, no dependencies, no network.
+
+  Deliberately NO guided tutorial. A rules panel is available on demand.
+
+  Effects: auras and draw triggers are simulated. Everything else is
+  printed on the card and flagged NOT SIMULATED, because a prototype that
+  quietly ignores a skill is worse than one that admits it.
+-->
+<style>
+:root{
+  --ink:#1c1710; --parch:#e8dcc0; --parch2:#d8c9a6; --edge:#6b5a3e;
+  --p1:#3f6fa8; --p2:#b4762c; --gold:#c9a227; --bad:#8a3f36; --good:#4a7c46;
+  --panel:#211c15; --panel2:#2c251b; --dim:#8a7a5e;
+  --u: clamp(46px, 7.4vmin, 92px);      /* board square */
+  --pad: clamp(6px, 1.2vmin, 14px);
+  --fs: clamp(11px, 1.35vmin, 15px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden}
+body{
+  background:#14110c;
+  color:var(--parch);
+  font:var(--fs)/1.45 "Iowan Old Style","Palatino Linotype",Georgia,serif;
+  user-select:none;
+}
+h1,h2,h3{font-weight:600;margin:0}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+.screen{position:fixed;inset:0;display:none;flex-direction:column}
+.screen.on{display:flex}
+
+/* ============================ start screen ============================ */
+#start{align-items:center;justify-content:center;gap:2.2vmin;
+  background:radial-gradient(ellipse at 50% 35%,#2a2318 0%,#14110c 70%)}
+#start .crest{font-size:clamp(30px,6.4vmin,74px);letter-spacing:.06em;
+  color:var(--gold);text-shadow:0 2px 0 #000,0 0 26px rgba(201,162,39,.28)}
+#start .sub{color:var(--dim);letter-spacing:.34em;text-transform:uppercase;
+  font-size:clamp(9px,1.5vmin,15px);margin-top:-1.4vmin}
+#start .menu{display:flex;flex-direction:column;gap:1.1vmin;margin-top:2.4vmin;
+  width:min(340px,68vw)}
+.mbtn{padding:1.5vmin 2vmin;border:1px solid var(--edge);border-radius:3px;
+  background:linear-gradient(#2f2819,#241e14);color:var(--parch);
+  letter-spacing:.16em;text-transform:uppercase;text-align:center;
+  font-size:clamp(11px,1.7vmin,17px);transition:.14s}
+.mbtn:hover{border-color:var(--gold);color:#fff;background:linear-gradient(#3b3220,#2b2418)}
+.mbtn small{display:block;letter-spacing:0;text-transform:none;color:var(--dim);
+  font-size:.82em;margin-top:.3em}
+#start .foot{position:absolute;bottom:2vmin;color:#5a4e3a;font-size:.86em;text-align:center}
+
+/* ============================== chrome =============================== */
+.bar{display:flex;align-items:center;gap:var(--pad);padding:var(--pad) calc(var(--pad)*1.5);
+  background:var(--panel);border-bottom:1px solid #000;flex:0 0 auto}
+.bar .grow{flex:1}
+.tbtn{padding:.5em 1em;border:1px solid var(--edge);border-radius:3px;background:#2a2318}
+.tbtn:hover{border-color:var(--gold)}
+.tbtn.pri{background:linear-gradient(#4a3f22,#382f19);border-color:var(--gold)}
+.tbtn:disabled{opacity:.35;cursor:default;border-color:#3a3226}
+.tag{font-size:.82em;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+
+/* =========================== deck builder ============================ */
+#builder .body{flex:1;display:flex;min-height:0}
+#pool{flex:1;overflow-y:auto;padding:var(--pad);display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:var(--pad);align-content:start}
+#side{width:min(330px,34vw);background:var(--panel);border-left:1px solid #000;
+  display:flex;flex-direction:column;min-height:0}
+#side .hd{padding:var(--pad) calc(var(--pad)*1.4);border-bottom:1px solid #000}
+#deckList{flex:1;overflow-y:auto;padding:calc(var(--pad)*.6)}
+.filters{display:flex;flex-wrap:wrap;gap:.4em;padding:var(--pad) calc(var(--pad)*1.5);
+  background:var(--panel2);border-bottom:1px solid #000;flex:0 0 auto}
+.fchip{padding:.32em .8em;border:1px solid var(--edge);border-radius:99px;font-size:.86em;color:var(--dim)}
+.fchip.on{background:var(--gold);color:#1c1710;border-color:var(--gold);font-weight:600}
+input[type=text],input[type=search]{background:#181410;border:1px solid var(--edge);
+  color:var(--parch);padding:.42em .7em;border-radius:3px;font:inherit;min-width:0}
+
+/* card tile */
+.tile{background:linear-gradient(160deg,var(--parch),var(--parch2));color:var(--ink);
+  border:1px solid #000;border-radius:4px;padding:7px 8px;position:relative;
+  display:flex;flex-direction:column;gap:4px;min-height:118px;transition:.1s}
+.tile:hover{transform:translateY(-2px);box-shadow:0 4px 12px #0009}
+.tile .nm{font-weight:700;font-size:1.02em;line-height:1.15;padding-right:2.1em}
+.tile .mt{font-size:.82em;color:#6a5c42}
+.tile .sk{font-size:.8em;line-height:1.3;color:#3d3527;flex:1}
+.tile .tr{position:absolute;top:5px;right:6px;width:1.85em;height:1.85em;border-radius:50%;
+  background:#1c1710;color:var(--parch);display:grid;place-items:center;font-size:.8em;font-weight:700}
+.tile .cnt{position:absolute;bottom:5px;right:6px;background:#1c1710;color:var(--gold);
+  border-radius:3px;padding:.05em .5em;font-size:.82em;font-weight:700}
+.tile.dim{opacity:.42}
+.tile .rar{position:absolute;bottom:6px;left:7px;width:.62em;height:.62em;transform:rotate(45deg);
+  border:1px solid #1c1710}
+.r-common{background:#efe7d4}.r-uncommon{background:#b07b2e}.r-rare{background:#3f6fa8}
+.r-epic{background:#7b4a9c}.r-legendary{background:#fff}.r-token{background:#5c5c5c}
+.warn{color:var(--bad);font-size:.82em}
+
+.drow{display:flex;align-items:center;gap:.5em;padding:.3em .55em;border-radius:3px}
+.drow:hover{background:#33291b}
+.drow .q{color:var(--gold);font-weight:700;min-width:1.6em}
+.drow .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drow .x{color:var(--bad);padding:0 .3em;font-weight:700}
+
+/* ============================== game ================================= */
+#game .body{flex:1;display:flex;min-height:0}
+#boardWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:var(--pad);padding:var(--pad);min-width:0;overflow:auto}
+#board{display:grid;grid-template-columns:repeat(5,var(--u));grid-template-rows:repeat(6,var(--u));
+  gap:3px;background:#0d0b08;padding:3px;border:1px solid var(--edge);border-radius:3px}
+.sq{position:relative;border-radius:2px;display:grid;place-items:center;overflow:hidden}
+.z-open{background:#191610}
+.z-barr{background:#2b2417;box-shadow:inset 0 0 0 1px #4a3f28}
+.z-tower{background:#2e2412;box-shadow:inset 0 0 0 2px var(--gold)}
+.sq.p1side{border-bottom:2px solid rgba(63,111,168,.35)}
+.sq.p2side{border-top:2px solid rgba(180,118,44,.35)}
+.sq .lbl{position:absolute;bottom:1px;right:3px;font-size:.68em;color:#4a4132}
+.sq.hi{outline:2px solid var(--good);outline-offset:-2px;cursor:pointer}
+.sq.hi-atk{outline:2px solid var(--bad);outline-offset:-2px;cursor:pointer}
+.sq.hi-twr{outline:2px dashed var(--gold);outline-offset:-2px;cursor:pointer}
+.sq.sel{outline:2px solid var(--gold);outline-offset:-2px}
+.sq.drop{background:#2f3a28}
+
+.unit{width:calc(100% - 4px);height:calc(100% - 4px);border-radius:2px;
+  display:flex;flex-direction:column;justify-content:space-between;padding:2px 3px;
+  font-size:.78em;line-height:1.1;cursor:pointer;position:relative;overflow:hidden}
+.unit.o1{background:linear-gradient(150deg,#e6dcc4,#cdbf9c);color:#1c1710;box-shadow:0 0 0 2px var(--p1)}
+.unit.o2{background:linear-gradient(150deg,#e8d6b6,#cfb885);color:#1c1710;box-shadow:0 0 0 2px var(--p2)}
+.unit.fd{background:repeating-linear-gradient(45deg,#3a3020,#3a3020 5px,#332b1c 5px,#332b1c 10px);
+  color:#8a7a5e;box-shadow:0 0 0 2px #55492f}
+.unit.tapped{transform:rotate(90deg) scale(.86)}
+.unit .un{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.95em}
+.unit .ud{display:flex;justify-content:space-between;align-items:flex-end;font-size:.92em}
+.unit .mod{font-weight:700;color:#2c5c2a}
+.unit .mod.neg{color:var(--bad)}
+.unit .fxq{position:absolute;top:1px;right:2px;font-size:.8em;color:#8a6a1e}
+
+#side2{width:min(340px,32vw);background:var(--panel);border-left:1px solid #000;
+  display:flex;flex-direction:column;min-height:0}
+#log{flex:1;overflow-y:auto;padding:var(--pad);font-size:.92em}
+#log div{margin-bottom:.18em}
+.l-h{color:var(--gold);font-weight:700;margin-top:.5em}
+.l-d{color:#a2937a}.l-g{color:#8fbe86}.l-r{color:#d2a35c}.l-k{color:#d98476}
+#hand{display:flex;gap:6px;padding:var(--pad);background:var(--panel2);
+  border:1px solid var(--edge);border-radius:3px;width:100%;max-width:min(100%,1100px);
+  overflow-x:auto;overflow-y:hidden;flex:0 0 auto;min-height:5.4em;align-items:flex-start}
+#hand::-webkit-scrollbar{height:7px}
+#hand::-webkit-scrollbar-thumb{background:#4a4030;border-radius:4px}
+.hcard{flex:0 0 auto;width:clamp(96px,13vmin,140px);background:linear-gradient(160deg,var(--parch),var(--parch2));
+  color:var(--ink);border:1px solid #000;border-radius:3px;padding:4px 5px;cursor:grab;
+  position:relative;font-size:.86em}
+.hcard:hover{transform:translateY(-3px)}
+.hcard.picked{outline:2px solid var(--gold)}
+.hcard .hn{font-weight:700;line-height:1.1;font-size:.98em;padding-right:1.6em}
+.hcard .hm{font-size:.86em;color:#6a5c42}
+.hcard .tr{position:absolute;top:3px;right:4px;width:1.6em;height:1.6em;border-radius:50%;
+  background:#1c1710;color:var(--parch);display:grid;place-items:center;font-size:.76em;font-weight:700}
+.acts{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
+.acts button{font-size:.82em;padding:.15em .5em;border:1px solid #8a7a5e;border-radius:2px;background:#00000012}
+.acts button:hover{background:#0002}
+
+#fx{min-height:3.2em;display:grid;place-items:center;padding:.45em;
+  background:#0d0b08;border:1px solid var(--edge);border-radius:3px;
+  width:100%;max-width:min(100%,640px);color:#4a4132;font-size:.9em}
+.fxrow{display:flex;gap:1.2em;align-items:center;justify-content:center}
+.die{width:2.1em;height:2.1em;border-radius:4px;display:grid;place-items:center;
+  font-weight:700;background:var(--parch);color:var(--ink);position:relative}
+.die.p2{background:#e8d6b6}
+.die small{position:absolute;bottom:-.2em;right:.1em;font-size:.5em;color:#6a5c42}
+.dice{display:flex;gap:.3em;justify-content:center}
+.sum{font-weight:700;color:var(--gold);text-align:center}
+.who{font-size:.84em;color:var(--dim);text-align:center;max-width:13em}
+.verdict{text-align:center;font-weight:700;margin-top:.25em;letter-spacing:.08em}
+.v-win{color:var(--good)}.v-lose{color:var(--bad)}.v-tie{color:var(--gold)}.v-tower{color:var(--gold)}
+
+/* modal */
+#modal{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:60;padding:4vmin}
+#modal.on{display:grid}
+.mbox{background:var(--panel);border:1px solid var(--edge);border-radius:4px;
+  max-width:min(720px,94vw);max-height:88vh;overflow-y:auto;padding:calc(var(--pad)*2)}
+.mbox h2{color:var(--gold);margin-bottom:.5em}
+.mbox h3{color:var(--gold);margin:1em 0 .2em;font-size:1em}
+.mbox p,.mbox li{color:#c8bb9e;margin:.3em 0}
+.mbox table{width:100%;border-collapse:collapse;margin:.5em 0}
+.mbox td,.mbox th{border-bottom:1px solid #3a3226;padding:.3em .5em;text-align:left}
+
+@media (max-width:820px){
+  #game .body{flex-direction:column}
+  #side2{width:100%;border-left:none;border-top:1px solid #000;max-height:34vh}
+  #side{width:100%}
+  #builder .body{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================ START ============================ -->
+<div class="screen on" id="start">
+  <div class="crest">TOWERS OF ATHERIA</div>
+  <div class="sub">Dweller Clash</div>
+  <div class="menu">
+    <button class="mbtn" data-go="builder">Build Deck<small>Browse the collection and save decks</small></button>
+    <button class="mbtn" data-go="battle">Battle<small>Your active deck against the opponent</small></button>
+    <button class="mbtn" data-go="bench">Test Bench<small>Two players, one device — pick both decks</small></button>
+    <button class="mbtn" data-go="rules">Rules<small>Reference, open any time</small></button>
+    <button class="mbtn" data-go="exit">Exit</button>
+  </div>
+  <div class="foot">GridOrcaGames · prototype · card effects marked <b>?</b> are printed but not yet simulated</div>
+</div>
+
+<!-- =========================== BUILDER =========================== -->
+<div class="screen" id="builder">
+  <div class="bar">
+    <button class="tbtn" data-back>&larr; Back</button>
+    <span class="tag">Deck Builder</span>
+    <input type="search" id="q" placeholder="search name or text" style="width:min(240px,30vw)">
+    <span class="grow"></span>
+    <span class="tag" id="poolCount"></span>
+  </div>
+  <div class="filters" id="filters"></div>
+  <div class="body">
+    <div id="pool"></div>
+    <div id="side">
+      <div class="hd">
+        <div style="display:flex;gap:.4em;align-items:center">
+          <input type="text" id="deckName" placeholder="deck name" style="flex:1">
+          <button class="tbtn pri" id="saveDeck">Save</button>
+        </div>
+        <div id="deckStat" style="margin-top:.5em"></div>
+        <div style="display:flex;gap:.4em;margin-top:.5em;flex-wrap:wrap">
+          <button class="tbtn" id="newDeck">New</button>
+          <button class="tbtn" id="loadDeck">Load</button>
+          <button class="tbtn" id="setActive">Set Active</button>
+          <button class="tbtn" id="clearDeck">Clear</button>
+        </div>
+      </div>
+      <div id="deckList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ GAME ============================= -->
+<div class="screen" id="game">
+  <div class="bar">
+    <button class="tbtn" data-back>&larr; Menu</button>
+    <span class="tag" id="whoTurn"></span>
+    <span class="tag" id="phaseTag"></span>
+    <span class="grow"></span>
+    <span class="tag" id="decks"></span>
+    <button class="tbtn" id="btnPhase">Next Phase</button>
+    <button class="tbtn" id="btnRules">Rules</button>
+  </div>
+  <div class="body">
+    <div id="boardWrap">
+      <div id="fx"></div>
+      <div id="board"></div>
+      <div id="hand"></div>
+    </div>
+    <div id="side2">
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<div id="modal"><div class="mbox" id="mbox"></div></div>
+
+<script src="toa_catalog.js"></script>
+<script>
+"use strict";
+/* ===================================================================
+   0. CATALOG
+   =================================================================== */
+const CAT = (window.TOA_CATALOG || []).slice();
+if(!CAT.length){
+  document.body.innerHTML='<div style="padding:3em;color:#d98476;font:16px Georgia">'+
+    '<b>toa_catalog.js did not load.</b><br><br>It must sit in the same folder as this file. '+
+    'If you opened this straight from disk, some browsers block sibling scripts — '+
+    'zip both files together and upload, or run a local server.</div>';
+}
+const BY_ID = Object.fromEntries(CAT.map(c=>[c.id,c]));
+const PLAYABLE = CAT.filter(c=>c.rarity!=="token");
+const TOKENS   = Object.fromEntries(CAT.filter(c=>c.rarity==="token").map(c=>[c.name,c]));
+const DIE = {1:6,2:8,3:12,4:20};
+
+/* Which fx keys the engine actually simulates. Anything else is printed
+   on the card and badged "?" so a playtester is never misled. */
+const AURA = {
+  aura_plus1_dungeon:      u=>u.dweller==="dungeon" ? 1 : 0,
+  aura_plus1_any_incl_self:()=>1,
+  aura_plus2_dungeon_lava: u=>(u.dweller==="dungeon"||u.dweller==="lava") ? 2 : 0,
+  aura_bog:                u=>(u.dweller==="dungeon"||u.dweller==="forest") ? 1 : -3,
+  aura_lava_and_wisp:      u=>u.dweller==="lava" ? 1 : 0,
+  aura_plus2_honor:        u=>u.dweller==="honor" ? 2 : 0,
+  aura_minus1_non_honor:   u=>u.dweller!=="honor" ? -1 : 0,
+  aura_plus3_low_tier:     u=>(u.tier===1||u.tier===2) ? 3 : 0,
+};
+const SELF_AURA = new Set(["aura_plus1_any_incl_self"]);
+const SIMULATED = new Set([...Object.keys(AURA),"vanilla","token",
+  "on_summon_draw1","on_normal_summon_draw1","empty_hand_draw5",""]);
+
+/* ===================================================================
+   1. SAVED DECKS  (localStorage — this is a standalone page, not an
+      artifact, so persistence here is correct and expected)
+   =================================================================== */
+const LS="toa_decks_v2";
+let STORE = load();
+function load(){
+  try{ const o=JSON.parse(localStorage.getItem(LS)); if(o&&o.decks) return o; }catch(e){}
+  return {decks:{}, active:null};
+}
+function save(){ try{ localStorage.setItem(LS,JSON.stringify(STORE)); }catch(e){
+  alert("Could not save. Your browser may be blocking storage for local files."); } }
+
+function defaultDecks(){
+  // Curated from the collection, exactly as the design doc describes:
+  // the Release is the collection, decks are selected out of it.
+  // Fill a real curve rather than 3 copies of everything cheap.
+  // Tier quotas total 54, which is the printed Starter Deck size.
+  const QUOTA={1:26,2:14,3:9,4:5}, MAXCOPY={1:3,2:3,3:2,4:1};
+  const mk=(set)=>{
+    const out=[];
+    for(const t of [1,2,3,4]){
+      const pool=PLAYABLE.filter(c=>c.set===set&&c.status==="final"&&c.tier===t);
+      if(!pool.length) continue;
+      let i=0, copies=0;
+      while(copies<QUOTA[t]){
+        const c=pool[i%pool.length];
+        if(out.filter(x=>x===c.id).length<MAXCOPY[t]){ out.push(c.id); copies++; }
+        i++;
+        if(i>pool.length*MAXCOPY[t]) break;   // pool exhausted, take what we got
+      }
+    }
+    return out;
+  };
+  if(!Object.keys(STORE.decks).length){
+    STORE.decks["Ashfall Crypts"]={name:"Ashfall Crypts",cards:mk("ASH")};
+    STORE.decks["Honor Guard"]  ={name:"Honor Guard",  cards:mk("HNR")};
+    STORE.active="Ashfall Crypts";
+    save();
+  }
+}
+defaultDecks();
+
+/* ===================================================================
+   2. SCREENS
+   =================================================================== */
+const $=id=>document.getElementById(id);
+let SCREEN="start";
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));
+  SCREEN=id;
+}
+document.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>show("start"));
+document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{
+  const g=b.dataset.go;
+  if(g==="builder"){ openBuilder(); show("builder"); }
+  else if(g==="battle") startBattle();
+  else if(g==="bench")  startBench();
+  else if(g==="rules")  rules();
+  else if(g==="exit")   exitGame();
+});
+function exitGame(){
+  modal(`<h2>Thanks for playing</h2>
+    <p>Towers of Atheria: Dweller Clash is an original physical trading card game
+    in development by GridOrcaGames. This prototype exists so people can try the
+    rules before the cards are printed.</p>
+    <p>Close the tab whenever you like — your saved decks stay in this browser.</p>
+    <p style="margin-top:1.2em"><button class="tbtn" onclick="closeModal()">Back</button></p>`);
+}
+function modal(html){ $("mbox").innerHTML=html; $("modal").classList.add("on"); }
+function closeModal(){ $("modal").classList.remove("on"); }
+window.closeModal=closeModal;
+$("modal").onclick=e=>{ if(e.target===$("modal")) closeModal(); };
+
+function rules(){
+  modal(`<h2>Towers of Atheria — Dweller Clash</h2>
+  <h3>How you win</h3>
+  <p>Your <b>deck is your life</b>. When a Unit strikes an enemy Tower, that player
+  mills cards off the top of their deck. A player who cannot draw loses.</p>
+  <h3>The board</h3>
+  <p>Each player has a Tower (centre of their back row), nine <b>Barracks</b> squares,
+  and an open front row. You summon into your own empty Barracks. Nobody stands on a Tower.
+  You may never enter an enemy Barracks — which is why an <b>empty</b> enemy Barracks
+  is how you reach their Tower.</p>
+  <h3>There are no stat numbers</h3>
+  <p>A Unit's strength is its Tier die: T1 = d6, T2 = d8, T3 = d12, T4 = d20.
+  Combat is a roll-off. Higher wins, the loser is discarded, and a <b>tie destroys both</b>.
+  Effects change the roll, never a printed number.</p>
+  <h3>A turn</h3>
+  <table>
+  <tr><th>Draw</th><td>Straighten your Units, then draw 1. Empty deck = you lose.</td></tr>
+  <tr><th>Recruitment</th><td>One Normal <i>or</i> Tribute Summon. Any number of Special Summons.
+      Evolve. Activate Skills.</td></tr>
+  <tr><th>Battle</th><td>Per Unit: Move, then Ride, then Attack. Then it taps.</td></tr>
+  </table>
+  <h3>Summoning</h3>
+  <p><b>Normal</b> — a Tier 1, into an empty Barracks, once per turn. May be Set face down.<br>
+  <b>Tribute</b> — a higher Tier, paying Tier−1 of your own Units.<br>
+  <b>Evolve</b> — play a Unit of the <i>same Dweller Type</i> exactly one Tier higher onto one
+  you control. The old card goes to the Discard. Causes Morph Sickness.<br>
+  <b>Ride</b> — move onto an adjacent friendly Unit. Two cards, both dice, one Unit.
+  Destroy it and both cards are discarded.</p>
+  <h3>Reach</h3>
+  <p><b>Melee</b> hits the 8 adjacent squares. <b>Ranged</b> hits those, plus one square
+  further out when the square between is empty.</p>
+  <h3>Tapping</h3>
+  <p>Turn a Unit sideways when it has finished acting, or when it has Morph Sickness.
+  A tapped Unit still defends at full strength.</p>
+  <h3>Face down</h3>
+  <p>Set a Normal Summon face down. It cannot flip up on the turn it was Set. Attacking it
+  reveals it before the roll. Face-down Units can be Tributed, but cannot Evolve or Ride.</p>
+  <h3>This prototype</h3>
+  <p>Auras and draw triggers are simulated. Every other Skill is printed on the card and
+  marked <b>?</b> — meaning you resolve it yourselves, or ignore it. Nothing is silently faked.</p>
+  <p style="margin-top:1.2em"><button class="tbtn" onclick="closeModal()">Close</button></p>`);
+}
+$("btnRules").onclick=rules;
+
+/* ===================================================================
+   3. DECK BUILDER
+   =================================================================== */
+let CUR={name:"",cards:[]};
+let FILTER={set:null,tier:null,dweller:null,q:""};
+
+function openBuilder(){
+  if(!CUR.cards.length && STORE.active && STORE.decks[STORE.active]){
+    CUR={name:STORE.active,cards:STORE.decks[STORE.active].cards.slice()};
+    $("deckName").value=CUR.name;
+  }
+  buildFilters(); renderPool(); renderDeck();
+}
+function buildFilters(){
+  const f=$("filters"); f.innerHTML="";
+  const grp=(label,key,vals)=>{
+    vals.forEach(v=>{
+      const b=document.createElement("button");
+      b.className="fchip"+(FILTER[key]===v?" on":"");
+      b.textContent=v===null?("all "+label):v;
+      b.onclick=()=>{ FILTER[key]= FILTER[key]===v?null:v; buildFilters(); renderPool(); };
+      f.appendChild(b);
+    });
+  };
+  grp("sets","set",["ASH","HNR"]);
+  grp("tiers","tier",[1,2,3,4]);
+  grp("types","dweller",["dungeon","lava","honor","forest"]);
+}
+$("q").oninput=e=>{ FILTER.q=e.target.value.toLowerCase(); renderPool(); };
+
+function countOf(id){ return CUR.cards.filter(x=>x===id).length; }
+function renderPool(){
+  const list=PLAYABLE.filter(c=>
+    (!FILTER.set||c.set===FILTER.set) &&
+    (!FILTER.tier||c.tier===FILTER.tier) &&
+    (!FILTER.dweller||c.dweller===FILTER.dweller) &&
+    (!FILTER.q || (c.name+" "+c.skill).toLowerCase().includes(FILTER.q))
+  );
+  $("poolCount").textContent=list.length+" of "+PLAYABLE.length+" cards";
+  const el=$("pool"); el.innerHTML="";
+  for(const c of list){
+    const n=countOf(c.id);
+    const d=document.createElement("div");
+    d.className="tile"+(n>=3?" dim":"");
+    d.innerHTML=`<div class="tr">T${c.tier}</div>
+      <div class="nm">${esc(c.name)}</div>
+      <div class="mt">${c.dweller} · ${c.attack}${c.movable?"":" · immovable"}</div>
+      <div class="sk">${c.skill?esc(c.skill):"<i>no effect</i>"}</div>
+      <div class="rar r-${c.rarity}"></div>
+      ${c.status!=="final"?'<div class="warn">'+c.status+'</div>':""}
+      ${n?`<div class="cnt">${n}</div>`:""}`;
+    d.onclick=()=>{ if(countOf(c.id)<3){ CUR.cards.push(c.id); renderPool(); renderDeck(); } };
+    d.oncontextmenu=e=>{ e.preventDefault(); const i=CUR.cards.indexOf(c.id);
+      if(i>=0){ CUR.cards.splice(i,1); renderPool(); renderDeck(); } };
+    el.appendChild(d);
+  }
+}
+function renderDeck(){
+  const n=CUR.cards.length;
+  const legal = n>=40 && n<=60;
+  const tiers={1:0,2:0,3:0,4:0}; CUR.cards.forEach(id=>tiers[BY_ID[id].tier]++);
+  $("deckStat").innerHTML=
+    `<b style="color:${legal?'var(--good)':'var(--bad)'}">${n} cards</b> `+
+    `<span class="tag">${legal?"legal":"needs 40–60"}</span><br>`+
+    `<span class="tag">T1 ${tiers[1]} · T2 ${tiers[2]} · T3 ${tiers[3]} · T4 ${tiers[4]}</span>`+
+    (STORE.active?`<br><span class="tag">active deck: ${esc(STORE.active)}</span>`:"");
+  const uniq={}; CUR.cards.forEach(id=>uniq[id]=(uniq[id]||0)+1);
+  const el=$("deckList"); el.innerHTML="";
+  Object.keys(uniq).sort((a,b)=>BY_ID[a].tier-BY_ID[b].tier||BY_ID[a].name.localeCompare(BY_ID[b].name))
+    .forEach(id=>{
+      const c=BY_ID[id];
+      const r=document.createElement("div"); r.className="drow";
+      r.innerHTML=`<span class="q">${uniq[id]}×</span><span class="n">${esc(c.name)}</span>
+                   <span class="tag">T${c.tier}</span><span class="x">×</span>`;
+      r.querySelector(".x").onclick=()=>{ const i=CUR.cards.indexOf(id);
+        if(i>=0){CUR.cards.splice(i,1); renderPool(); renderDeck();} };
+      el.appendChild(r);
+    });
+}
+$("saveDeck").onclick=()=>{
+  const nm=$("deckName").value.trim();
+  if(!nm) return alert("Give the deck a name first.");
+  if(CUR.cards.length<40||CUR.cards.length>60)
+    if(!confirm(`${CUR.cards.length} cards. The rules want 40–60. Save anyway?`)) return;
+  STORE.decks[nm]={name:nm,cards:CUR.cards.slice()};
+  if(!STORE.active) STORE.active=nm;
+  CUR.name=nm; save(); renderDeck();
+  flash(`Saved "${nm}".`);
+};
+$("newDeck").onclick=()=>{ CUR={name:"",cards:[]}; $("deckName").value=""; renderPool(); renderDeck(); };
+$("clearDeck").onclick=()=>{ CUR.cards=[]; renderPool(); renderDeck(); };
+$("setActive").onclick=()=>{
+  const nm=$("deckName").value.trim();
+  if(!STORE.decks[nm]) return alert("Save the deck first.");
+  STORE.active=nm; save(); renderDeck(); flash(`"${nm}" is now your active deck.`);
+};
+$("loadDeck").onclick=()=>{
+  const names=Object.keys(STORE.decks);
+  if(!names.length) return alert("No saved decks yet.");
+  modal(`<h2>Load a deck</h2>${names.map(n=>
+    `<p><button class="tbtn" style="width:100%;text-align:left" onclick="pickDeck('${esc(n)}')">
+      ${esc(n)} <span class="tag">${STORE.decks[n].cards.length} cards${STORE.active===n?" · active":""}</span>
+     </button></p>`).join("")}
+     <p style="margin-top:1em"><button class="tbtn" onclick="closeModal()">Cancel</button></p>`);
+};
+window.pickDeck=n=>{ CUR={name:n,cards:STORE.decks[n].cards.slice()};
+  $("deckName").value=n; closeModal(); renderPool(); renderDeck(); };
+function flash(msg){ const s=$("deckStat"); const d=document.createElement("div");
+  d.className="tag"; d.style.color="var(--good)"; d.textContent=msg; s.appendChild(d);
+  setTimeout(()=>d.remove(),2600); }
+function esc(s){ return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+
+/* ===================================================================
+   4. GAME ENGINE
+   =================================================================== */
+const DIRS=[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+const ORTH=[[-1,0],[1,0],[0,-1],[0,1]];
+const inB=(r,c)=>r>=0&&r<6&&c>=0&&c<5;
+const rcName=(r,c)=>String.fromCharCode(65+c)+(6-r);
+function zone(r,c){
+  if(r===5) return {own:1,kind:c===2?"tower":"barr"};
+  if(r===4) return {own:1,kind:"barr"};
+  if(r===3) return {own:1,kind:"open"};
+  if(r===2) return {own:2,kind:"open"};
+  if(r===1) return {own:2,kind:"barr"};
+  return {own:2,kind:c===2?"tower":"barr"};
+}
+let G=null, UID=1, NPC_ON=false, NPC_BUSY=false;
+
+function makeDeck(ids){
+  const d=ids.map(id=>({uid:UID++, ...BY_ID[id]}));
+  for(let i=d.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[d[i],d[j]]=[d[j],d[i]];}
+  return d;
+}
+function unit(own,cards,o={}){
+  return {own,cards,tapped:!!o.tapped,sick:!!o.sick,fd:!!o.fd,
+          moved:false,acted:false,setTurn:o.setTurn===undefined?-99:o.setTurn};
+}
+const say=(cls,t)=>{ G.log.push([cls,t]); };
+
+function newGame(d1,d2,names,npc){
+  NPC_ON=npc; NPC_BUSY=false;
+  G={board:Array.from({length:6},()=>Array(5).fill(null)),
+     P:{1:{deck:makeDeck(d1),hand:[],disc:[],banish:[],name:names[0]},
+        2:{deck:makeDeck(d2),hand:[],disc:[],banish:[],name:names[1]}},
+     cur:1,phase:0,turn:1,summonUsed:false,sel:null,mode:null,log:[],over:false};
+  for(const p of[1,2]) for(let i=0;i<5;i++) G.P[p].hand.push(G.P[p].deck.pop());
+  say("h","=== Towers of Atheria — Dweller Clash ===");
+  say("d",`P1 ${names[0]} (blue, bottom) vs P2 ${names[1]} (amber, top). Your deck is your life.`);
+  say("h",`--- P1, turn 1 ---`);
+  say("d","the first player skips their first Battle Phase");
+  drawPhase();
+  show("game"); fxRest(); render();
+}
+function startBattle(){
+  const a=STORE.active&&STORE.decks[STORE.active];
+  if(!a) return alert("Set an active deck in the Deck Builder first.");
+  // NPC gets a random legal deck drawn from the whole collection.
+  const pool=PLAYABLE.filter(c=>c.status==="final");
+  const npcIds=[]; while(npcIds.length<54){
+    const c=pool[Math.random()*pool.length|0];
+    if(npcIds.filter(x=>x===c.id).length<3) npcIds.push(c.id);
+  }
+  newGame(a.cards,npcIds,[a.name,"Wandering Host"],true);
+}
+function startBench(){
+  const names=Object.keys(STORE.decks);
+  if(names.length<1) return alert("Save at least one deck first.");
+  const opts=n=>names.map(x=>`<option${STORE.active===x?" selected":""}>${esc(x)}</option>`).join("");
+  modal(`<h2>Test Bench</h2>
+    <p>Two players on one device. Pick a deck for each side.</p>
+    <p>P1 (blue, bottom) <select id="s1" style="font:inherit">${opts()}</select></p>
+    <p>P2 (amber, top) <select id="s2" style="font:inherit">${opts()}</select></p>
+    <p style="margin-top:1em">
+      <button class="tbtn pri" onclick="benchGo()">Start</button>
+      <button class="tbtn" onclick="closeModal()">Cancel</button></p>`);
+}
+window.benchGo=()=>{
+  const n1=$("s1").value,n2=$("s2").value;
+  closeModal();
+  newGame(STORE.decks[n1].cards,STORE.decks[n2].cards,[n1,n2],false);
+};
+
+/* ---- aura maths: this is the part playtesting most needs to see ---- */
+function modAt(r,c,u){
+  if(!u||u.fd) return 0;
+  const top=u.cards[0]; let m=0;
+  for(const[dr,dc]of DIRS){
+    const nr=r+dr,nc=c+dc; if(!inB(nr,nc))continue;
+    const o=G.board[nr][nc]; if(!o||o.fd)continue;
+    for(const card of o.cards){
+      const f=AURA[card.fx]; if(!f)continue;
+      if(o.own!==u.own && card.fx!=="aura_bog" && card.fx!=="aura_minus1_non_honor") continue;
+      m+=f(top);
+    }
+  }
+  for(const card of u.cards) if(SELF_AURA.has(card.fx)) m+=1;
+  return m;
+}
+const unitsOf=p=>{const o=[];for(let r=0;r<6;r++)for(let c=0;c<5;c++){
+  const u=G.board[r][c]; if(u&&u.own===p)o.push({r,c,u});} return o;};
+const dieTxt=u=>u.cards.map(c=>"d"+DIE[c.tier]).join("+");
+const label=u=>u.cards.map(c=>`${c.name} (T${c.tier})`).join(" + ");
+const isRanged=u=>u.cards.some(c=>c.attack==="ranged");
+const isMelee =u=>u.cards.some(c=>c.attack==="melee");
+const canMove =u=>u.cards.every(c=>c.movable);
+function rollDetail(u,mod){
+  const dice=u.cards.map(c=>({s:DIE[c.tier],v:1+(Math.random()*DIE[c.tier]|0)}));
+  const base=dice.reduce((s,d)=>s+d.v,0);
+  return {dice,base,mod:mod||0,total:Math.max(0,base+(mod||0))};
+}
+
+/* ---- phases ---- */
+function drawPhase(){
+  for(const{u}of unitsOf(G.cur)){ u.tapped=false;u.sick=false;u.moved=false;u.acted=false; }
+  const P=G.P[G.cur];
+  if(!P.deck.length){ G.over=true;
+    say("k",`P${G.cur} cannot draw. P${G.cur===1?2:1} WINS.`); return; }
+  P.hand.push(P.deck.pop());
+  say("d",`draw — deck ${P.deck.length}`);
+  G.phase=1;
+}
+function toBattle(){
+  G.phase=2; G.mode=null; G.sel=null;
+  if(G.turn===1&&G.cur===1){ say("r","Battle Phase SKIPPED — first player cannot attack on turn one."); return endTurn(); }
+  say("h","-- Battle Phase --");
+}
+function endTurn(){
+  say("d","-- End Phase --");
+  G.cur=G.cur===1?2:1; G.sel=null; G.mode=null; G.summonUsed=false;
+  if(G.cur===1)G.turn++;
+  say("h",`--- P${G.cur}, turn ${G.turn} ---`);
+  G.phase=0; drawPhase();
+  render();
+  if(NPC_ON&&G.cur===2&&!G.over&&!NPC_BUSY) setTimeout(npcTurn,520);
+}
+$("btnPhase").onclick=()=>{
+  if(G.over) return;
+  if(NPC_ON&&G.cur===2) return;
+  if(G.phase===1) toBattle(); else if(G.phase===2) endTurn();
+  render();
+};
+
+/* ---- summoning ---- */
+const tributeCost=t=>t-1;
+const canSummonAt=(r,c,p)=>{const z=zone(r,c);return z.own===p&&z.kind==="barr"&&!G.board[r][c];};
+
+function onSummon(card,normal){
+  const P=G.P[G.cur];
+  if(card.fx==="on_summon_draw1"||(normal&&card.fx==="on_normal_summon_draw1")){
+    if(P.deck.length){ P.hand.push(P.deck.pop()); say("g",`  ${card.name}: draw 1`); }
+  }
+  if(card.fx==="empty_hand_draw5" && P.hand.length===0){
+    for(let i=0;i<5&&P.deck.length;i++) P.hand.push(P.deck.pop());
+    say("g",`  ${card.name}: hand was empty — draw 5`);
+  }
+  if(card.fx && !SIMULATED.has(card.fx))
+    say("r",`  ${card.name}: "${card.skill}" — NOT SIMULATED, resolve it yourselves`);
+}
+
+/* ---- legal actions ---- */
+function actionsFrom(r,c){
+  const u=G.board[r][c]; if(!u||u.own!==G.cur||G.phase!==2) return [];
+  const out=[],me=u.own,foe=me===1?2:1;
+  if(!u.moved&&canMove(u)&&!u.tapped){
+    for(const[dr,dc]of ORTH){
+      const nr=r+dr,nc=c+dc; if(!inB(nr,nc))continue;
+      const z=zone(nr,nc);
+      if(z.kind==="tower")continue;
+      if(z.own===foe&&z.kind==="barr")continue;
+      if(!G.board[nr][nc]) out.push({r:nr,c:nc,k:"move"});
+    }
+  }
+  for(const[dr,dc]of ORTH){
+    const nr=r+dr,nc=c+dc; if(!inB(nr,nc))continue;
+    const o=G.board[nr][nc];
+    if(o&&o.own===me&&u.cards.length+o.cards.length<=2&&!u.sick&&!o.sick&&!u.fd&&!o.fd)
+      out.push({r:nr,c:nc,k:"ride"});
+  }
+  if(!u.acted&&!u.tapped){
+    const reach=[];
+    for(const[dr,dc]of DIRS){
+      const nr=r+dr,nc=c+dc;
+      if(inB(nr,nc)&&isMelee(u)) reach.push({r:nr,c:nc});
+      if(isRanged(u)){
+        if(inB(nr,nc)) reach.push({r:nr,c:nc});
+        const fr=r+2*dr,fc=c+2*dc;
+        if(inB(fr,fc)&&inB(nr,nc)&&!G.board[nr][nc]) reach.push({r:fr,c:fc,far:true});
+      }
+    }
+    for(const t of reach){
+      const z=zone(t.r,t.c),o=G.board[t.r][t.c];
+      if(o&&o.own===foe) out.push({r:t.r,c:t.c,k:"attack"});
+      else if(!o&&z.own===foe&&z.kind==="barr") out.push({r:t.r,c:t.c,k:"tower"});
+    }
+  }
+  const seen=new Set();
+  return out.filter(a=>{const k=a.r+","+a.c+","+a.k; if(seen.has(k))return false; seen.add(k); return true;});
+}
+
+/* ---- resolution ---- */
+function kill(r,c,why){
+  const u=G.board[r][c]; if(!u)return;
+  G.P[u.own].disc.push(...u.cards);
+  say("k",`  ${u.fd?"a face-down Unit":label(u)} destroyed${why?" ("+why+")":""}`);
+  G.board[r][c]=null;
+}
+function millTower(foe,n,u){
+  const P=G.P[foe],before=P.deck.length;
+  for(let i=0;i<n&&P.deck.length;i++) P.disc.push(P.deck.pop());
+  say("k",`  TOWER STRUCK — ${before-P.deck.length} milled, P${foe} deck ${P.deck.length}`);
+  if(!P.deck.length) say("r","  their deck is empty — they lose on their next draw");
+}
+function resolve(s,a){
+  const u=G.board[s.r][s.c],me=u.own,foe=me===1?2:1;
+  if(a.k==="move"){
+    G.board[a.r][a.c]=u; G.board[s.r][s.c]=null; u.moved=true;
+    say("d",`move ${u.fd?"face-down":label(u)}  ${rcName(s.r,s.c)} → ${rcName(a.r,a.c)}`);
+    return;
+  }
+  if(a.k==="ride"){
+    const o=G.board[a.r][a.c];
+    o.cards=[...o.cards,...u.cards]; G.board[s.r][s.c]=null;
+    o.tapped=false;o.sick=false;o.moved=false;o.acted=false;
+    say("g",`RIDE → ${label(o)} at ${rcName(a.r,a.c)} — rolls ${dieTxt(o)}`);
+    say("r","  one Unit now: one target, one square. Destroy it and BOTH cards are discarded.");
+    return;
+  }
+  if(a.k==="tower"){
+    const res=rollDetail(u,modAt(s.r,s.c,u));
+    fxPanel(`<div class="fxrow">
+      <div><div class="who">${label(u)}</div>${diceHTML(res,me)}</div>
+      <div>→</div><div><div class="who">P${foe} TOWER</div>
+      <div class="sum" style="color:var(--bad)">−${res.total}</div></div></div>
+      <div class="verdict v-tower">TOWER STRUCK</div>`);
+    say("h",`${label(u)} strikes the P${foe} Tower through an empty Barracks`);
+    millTower(foe,res.total,u);
+    u.acted=true; u.tapped=true;
+    return;
+  }
+  if(a.k==="attack"){
+    const d=G.board[a.r][a.c];
+    if(d.fd){ d.fd=false; say("r",`  FACE-DOWN REVEALED → ${label(d)}`); }
+    if(u.fd){ u.fd=false; }
+    const am=modAt(s.r,s.c,u), dm=modAt(a.r,a.c,d);
+    const A=rollDetail(u,am), D=rollDetail(d,dm);
+    say("h",`ATTACK ${label(u)} → ${label(d)}`);
+    say("",`  ${dieTxt(u)}${fmtMod(am)} = ${A.total}   vs   ${dieTxt(d)}${fmtMod(dm)} = ${D.total}`);
+    let verdict,vc;
+    if(A.total>D.total){ verdict="ATTACKER WINS"; vc="v-win"; kill(a.r,a.c); }
+    else if(A.total<D.total){ verdict="DEFENDER HOLDS"; vc="v-lose"; kill(s.r,s.c); }
+    else { verdict="TIE — BOTH DESTROYED"; vc="v-tie"; kill(a.r,a.c); kill(s.r,s.c); }
+    fxPanel(`<div class="fxrow">
+      <div><div class="who">${label(u)}</div>${diceHTML(A,me)}</div>
+      <div>vs</div>
+      <div><div class="who">${label(d)}</div>${diceHTML(D,d.own)}</div></div>
+      <div class="verdict ${vc}">${verdict}</div>`);
+    if(G.board[s.r][s.c]){ u.acted=true; u.tapped=true; }
+    return;
+  }
+}
+const fmtMod=m=>m?` ${m>0?"+":""}${m}`:"";
+function diceHTML(res,p){
+  return `<div class="dice">${res.dice.map(d=>
+    `<div class="die p${p}">${d.v}<small>d${d.s}</small></div>`).join("")}</div>`+
+    `<div class="sum">${res.base}${fmtMod(res.mod)}${res.dice.length>1||res.mod?" = "+res.total:""}</div>`;
+}
+function fxPanel(html){ $("fx").innerHTML=html; }
+function fxRest(){ $("fx").innerHTML='<div>dice and combat results appear here</div>'; }
+
+/* ---- clicking ---- */
+function cellClick(r,c){
+  if(G.over) return;
+  if(NPC_ON&&G.cur===2) return;
+  const P=G.P[G.cur];
+  if(G.mode){
+    const m=G.mode;
+    if(m.t==="place"&&canSummonAt(r,c,G.cur)){
+      P.hand.splice(P.hand.indexOf(m.card),1);
+      G.board[r][c]=unit(G.cur,[m.card],{fd:m.fd,setTurn:G.turn});
+      G.summonUsed=true;
+      say("g",`${m.how} Summon ${m.fd?"(face down)":m.card.name} to ${rcName(r,c)}`);
+      if(!m.fd) onSummon(m.card,m.how==="Normal");
+      G.mode=null; return render();
+    }
+    if(m.t==="trib"){
+      const u=G.board[r][c];
+      if(u&&u.own===G.cur){ kill(r,c,"tributed"); m.picked++;
+        if(m.picked>=m.need){
+          G.mode={t:"place",card:m.card,fd:m.fd,how:"Tribute"};
+          say("d","now choose an empty Barracks");
+        }
+        return render();
+      }
+    }
+    if(m.t==="evo"){
+      const u=G.board[r][c];
+      if(u&&u.own===G.cur&&!u.fd&&u.cards.length===1&&
+         u.cards[0].tier===m.card.tier-1&&u.cards[0].dweller===m.card.dweller){
+        P.hand.splice(P.hand.indexOf(m.card),1);
+        P.disc.push(u.cards[0]);
+        say("g",`EVOLVE ${u.cards[0].name} → ${m.card.name} (old card to Discard)`);
+        G.board[r][c]=unit(G.cur,[m.card],{tapped:true,sick:true});
+        onSummon(m.card,false);
+        G.mode=null; return render();
+      }
+    }
+    G.mode=null; return render();
+  }
+  if(G.sel){
+    const acts=actionsFrom(G.sel.r,G.sel.c);
+    const a=acts.find(x=>x.r===r&&x.c===c);
+    if(a){ resolve(G.sel,a); G.sel=null; return render(); }
+  }
+  const u=G.board[r][c];
+  G.sel=(u&&u.own===G.cur&&G.phase===2)?{r,c}:null;
+  render();
+}
+
+/* ---- NPC: deliberately beatable, plays the plan not the optimum ---- */
+function npcTurn(){
+  NPC_BUSY=true;
+  const P=G.P[2];
+  // Recruitment: one summon, cheapest first, into a free Barracks.
+  const spots=[]; for(let r=0;r<6;r++)for(let c=0;c<5;c++) if(canSummonAt(r,c,2)) spots.push({r,c});
+  if(spots.length){
+    const t1=P.hand.filter(c=>c.tier===1);
+    const mine=unitsOf(2).length;
+    const bigs=P.hand.filter(c=>c.tier>1&&tributeCost(c.tier)<=mine)
+                     .sort((a,b)=>b.tier-a.tier);
+    if(bigs.length&&Math.random()<.5){
+      const card=bigs[0],need=tributeCost(card.tier);
+      const fodder=unitsOf(2).sort((a,b)=>a.u.cards[0].tier-b.u.cards[0].tier).slice(0,need);
+      fodder.forEach(f=>kill(f.r,f.c,"tributed"));
+      const sp=spots[Math.random()*spots.length|0];
+      P.hand.splice(P.hand.indexOf(card),1);
+      G.board[sp.r][sp.c]=unit(2,[card]);
+      say("g",`P2 Tribute Summons ${card.name} to ${rcName(sp.r,sp.c)}`);
+      onSummon(card,false);
+    } else if(t1.length){
+      const card=t1[Math.random()*t1.length|0];
+      const sp=spots[Math.random()*spots.length|0];
+      P.hand.splice(P.hand.indexOf(card),1);
+      G.board[sp.r][sp.c]=unit(2,[card]);
+      say("g",`P2 Normal Summons ${card.name} to ${rcName(sp.r,sp.c)}`);
+      onSummon(card,true);
+    }
+  }
+  G.phase=2; render();
+  // Battle: tower strikes first, then attacks, then advance.
+  const queue=unitsOf(2);
+  let i=0;
+  const step=()=>{
+    if(G.over){ NPC_BUSY=false; return; }
+    if(i>=queue.length){ NPC_BUSY=false; endTurn(); render(); return; }
+    const q=queue[i++];
+    if(!G.board[q.r][q.c]){ return setTimeout(step,90); }
+    const acts=actionsFrom(q.r,q.c);
+    const pick = acts.find(a=>a.k==="tower")
+              || acts.find(a=>a.k==="attack")
+              || acts.filter(a=>a.k==="move").sort((a,b)=>b.r-a.r)[0];
+    if(pick){ resolve({r:q.r,c:q.c},pick); render(); }
+    setTimeout(step,620);
+  };
+  setTimeout(step,420);
+}
+
+/* ===================================================================
+   5. RENDER
+   =================================================================== */
+function render(){
+  if(!G) return;
+  const PH=["Draw","Recruitment","Battle","End"];
+  $("whoTurn").textContent=`P${G.cur} · ${G.P[G.cur].name} · turn ${G.turn}`;
+  $("phaseTag").textContent=PH[G.phase];
+  $("decks").textContent=`P1 deck ${G.P[1].deck.length} · P2 deck ${G.P[2].deck.length}`;
+  $("btnPhase").textContent=G.phase===1?"To Battle":"End Turn";
+  $("btnPhase").disabled=G.over||(NPC_ON&&G.cur===2);
+
+  const acts=G.sel?actionsFrom(G.sel.r,G.sel.c):[];
+  const b=$("board"); b.innerHTML="";
+  for(let r=0;r<6;r++)for(let c=0;c<5;c++){
+    const z=zone(r,c),u=G.board[r][c];
+    const d=document.createElement("div");
+    d.className=`sq z-${z.kind} ${z.own===1?"p1side":"p2side"}`;
+    if(G.sel&&G.sel.r===r&&G.sel.c===c) d.classList.add("sel");
+    const a=acts.find(x=>x.r===r&&x.c===c);
+    if(a) d.classList.add(a.k==="attack"?"hi-atk":a.k==="tower"?"hi-twr":"hi");
+    if(G.mode&&G.mode.t==="place"&&canSummonAt(r,c,G.cur)) d.classList.add("hi");
+    if(z.kind==="tower") d.innerHTML=`<div style="color:var(--gold);font-weight:700;font-size:.8em">TOWER<br>${G.P[z.own].deck.length}</div>`;
+    else d.innerHTML=`<span class="lbl">${rcName(r,c)}</span>`;
+    if(u){
+      const m=modAt(r,c,u);
+      const un=document.createElement("div");
+      un.className=`unit o${u.own}${u.fd?" fd":""}${u.tapped?" tapped":""}`;
+      const unsim=u.cards.some(x=>x.fx&&!SIMULATED.has(x.fx));
+      un.innerHTML = u.fd
+        ? `<div class="un">SET</div><div class="ud"><span>face down</span></div>`
+        : `<div class="un">${esc(u.cards.map(x=>x.name).join("+"))}</div>
+           <div class="ud"><span>${dieTxt(u)}</span>
+           ${m?`<span class="mod${m<0?" neg":""}">${m>0?"+":""}${m}</span>`:""}</div>
+           ${unsim?'<div class="fxq">?</div>':""}`;
+      un.title = u.fd?"face-down Unit":u.cards.map(x=>x.name+" — "+(x.skill||"no effect")).join("\n");
+      d.appendChild(un);
+    }
+    d.onclick=()=>cellClick(r,c);
+    d.ondragover=e=>{ if(G.mode&&G.mode.t==="place"&&canSummonAt(r,c,G.cur)){e.preventDefault();d.classList.add("drop");} };
+    d.ondragleave=()=>d.classList.remove("drop");
+    d.ondrop=e=>{ e.preventDefault(); d.classList.remove("drop"); cellClick(r,c); };
+    b.appendChild(d);
+  }
+  renderHand(); renderLog();
+}
+function renderHand(){
+  const h=$("hand"); h.innerHTML="";
+  if(NPC_ON&&G.cur===2){ h.innerHTML='<div class="tag">opponent is thinking…</div>'; return; }
+  const P=G.P[G.cur];
+  for(const card of P.hand){
+    const d=document.createElement("div");
+    d.className="hcard"+(G.mode&&G.mode.card===card?" picked":"");
+    d.draggable=true;
+    d.innerHTML=`<div class="tr">T${card.tier}</div>
+      <div class="hn">${esc(card.name)}</div>
+      <div class="hm">${card.dweller} · ${card.attack}${card.movable?"":" · immov"}</div>`;
+    d.title=card.skill||"no effect";
+    if(G.phase===1){
+      const acts=document.createElement("div"); acts.className="acts";
+      const mk=(t,fn)=>{const b=document.createElement("button");b.textContent=t;
+        b.onclick=e=>{e.stopPropagation();fn();};acts.appendChild(b);};
+      if(card.tier===1&&!G.summonUsed){ mk("summon",()=>{G.mode={t:"place",card,fd:false,how:"Normal"};render();});
+                                        mk("set",()=>{G.mode={t:"place",card,fd:true,how:"Normal"};render();}); }
+      if(card.tier>1&&!G.summonUsed&&unitsOf(G.cur).length>=tributeCost(card.tier))
+        mk("tribute",()=>{G.mode={t:"trib",card,fd:false,need:tributeCost(card.tier),picked:0};
+          say("d",`select ${tributeCost(card.tier)} of your Units to tribute`);render();});
+      if(card.tier>1) mk("evolve",()=>{G.mode={t:"evo",card};
+        say("d",`choose a face-up Tier ${card.tier-1} ${card.dweller} Unit you control`);render();});
+      d.appendChild(acts);
+    }
+    d.ondragstart=()=>{ if(G.phase===1&&card.tier===1&&!G.summonUsed) G.mode={t:"place",card,fd:false,how:"Normal"};
+                        render(); };
+    h.appendChild(d);
+  }
+  if(!P.hand.length) h.innerHTML='<div class="tag">hand empty</div>';
+}
+function renderLog(){
+  const l=$("log");
+  l.innerHTML=G.log.slice(-160).map(([c,t])=>`<div class="l-${c||"d"}">${esc(t)}</div>`).join("");
+  l.scrollTop=l.scrollHeight;
+}
+
+/* responsive: recompute square size when the window changes */
+addEventListener("resize",()=>{ if(SCREEN==="game") render(); });
+</script>
+</body>
+</html>

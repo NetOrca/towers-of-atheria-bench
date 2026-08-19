@@ -1,42 +1,62 @@
 name,tier,type,attack,movable,rarity,skill,art,quantity,card_no,set_code,release_code,fx,status
-Flaming Jack Rabbit,1,lava,melee,yes,common,"If this card would be discarded or destroyed, shuffle it into your deck instead.",,1,1,ASH,ASH,recycle_self,final
-Dungeon Door,3,dungeon,melee,no,common,This Unit and adjacent Units you control add +1 to their rolls. Any Dweller Type.,,1,2,ASH,ASH,aura_plus1_any_incl_self,final
-Lavagoyle,3,lava,melee,yes,common,,,1,3,ASH,ASH,vanilla,final
-Hellhound,1,lava,melee,yes,common,(stats not yet assigned),,1,4,ASH,ASH,,stub
-Dungeon Rat,1,dungeon,melee,yes,common,(stats not yet assigned),,1,5,ASH,ASH,,stub
-Rummaging Rodent,1,dungeon,melee,yes,common,(stats not yet assigned),,1,6,ASH,ASH,,stub
-Crypt Bat,1,dungeon,melee,yes,common,(stats not yet assigned),,1,7,ASH,ASH,,stub
-Cinder Bat,1,lava,melee,yes,common,(stats not yet assigned),,1,8,ASH,ASH,,stub
-Disembodied Hand,1,dungeon,melee,yes,common,(stats not yet assigned),,1,9,ASH,ASH,,stub
-Skeleton,1,dungeon,melee,yes,common,(stats not yet assigned),,1,10,ASH,ASH,,stub
-Skeletal Archer,1,dungeon,melee,yes,common,(stats not yet assigned),,1,11,ASH,ASH,,stub
-Graveyard Wraith,1,dungeon,melee,yes,common,(stats not yet assigned),,1,12,ASH,ASH,,stub
-Ash Skink,1,lava,melee,yes,common,(stats not yet assigned),,1,13,ASH,ASH,,stub
-Undead Hound,1,dungeon,melee,yes,common,(stats not yet assigned),,1,14,ASH,ASH,,stub
-Ember Wisp,1,lava,melee,yes,common,(stats not yet assigned),,1,15,ASH,ASH,,stub
-Grave Snare,1,dungeon,melee,yes,common,(stats not yet assigned),,1,16,ASH,ASH,,stub
-Immolation Trap,1,lava,melee,yes,common,(stats not yet assigned),,1,17,ASH,ASH,,stub
-Grave Shifter,1,dungeon,melee,yes,common,(stats not yet assigned),,1,18,ASH,ASH,,stub
-Immovable Bog,1,dungeon,melee,yes,common,(stats not yet assigned),,1,19,ASH,ASH,,stub
-Molten Field,1,lava,melee,yes,common,(stats not yet assigned),,1,20,ASH,ASH,,stub
-Cinder Skeleton,1,lava,melee,yes,common,(stats not yet assigned),,1,21,ASH,ASH,,stub
-Bone Diviner,1,dungeon,melee,yes,common,(stats not yet assigned),,1,22,ASH,ASH,,stub
-Magma Mine,1,lava,melee,yes,common,(stats not yet assigned),,1,23,ASH,ASH,,stub
-Armored Skeleton,2,dungeon,melee,yes,common,(stats not yet assigned),,1,24,ASH,ASH,,stub
-Skeleton Archer,2,dungeon,melee,yes,common,(stats not yet assigned),,1,25,ASH,ASH,,stub
-Skeletal Mage,2,dungeon,melee,yes,common,(stats not yet assigned),,1,26,ASH,ASH,,stub
-Shallow Grave,2,dungeon,melee,yes,common,(stats not yet assigned),,1,27,ASH,ASH,,stub
-Fire Imp,2,lava,melee,yes,common,(stats not yet assigned),,1,28,ASH,ASH,,stub
-Undead Mare,2,dungeon,melee,yes,common,(stats not yet assigned),,1,29,ASH,ASH,,stub
-Ghoul Rider,2,dungeon,melee,yes,common,(stats not yet assigned),,1,30,ASH,ASH,,stub
-Slagborn,2,lava,melee,yes,common,(stats not yet assigned),,1,31,ASH,ASH,,stub
-Goblin Bomb Carrier,2,lava,melee,yes,common,(stats not yet assigned),,1,32,ASH,ASH,,stub
-Flesh Collector,2,dungeon,melee,yes,common,(stats not yet assigned),,1,33,ASH,ASH,,stub
-Gargoyle,3,dungeon,melee,yes,common,(stats not yet assigned),,1,34,ASH,ASH,,stub
-Charnel Warden,3,dungeon,melee,yes,common,(stats not yet assigned),,1,35,ASH,ASH,,stub
-Ashen Lancer,3,lava,melee,yes,common,(stats not yet assigned),,1,36,ASH,ASH,,stub
-Ash Golem,3,lava,melee,yes,common,(stats not yet assigned),,1,37,ASH,ASH,,stub
-Ashlands,3,lava,melee,yes,common,(stats not yet assigned),,1,38,ASH,ASH,,stub
-Lich King,4,dungeon,melee,yes,common,(stats not yet assigned),,1,39,ASH,ASH,,stub
-Death Knight,4,dungeon,melee,yes,common,(stats not yet assigned),,1,40,ASH,ASH,,stub
-Corrupted Paladin,4,dungeon,melee,yes,common,(stats not yet assigned),,1,41,ASH,ASH,,stub
+Hellhound,1,lava,melee,yes,common,,,1,1,ASH,ASH,vanilla,final
+Dungeon Rat,1,dungeon,melee,yes,common,,,1,2,ASH,ASH,vanilla,final
+Rummaging Rodent,1,dungeon,melee,yes,common,On Normal Summon: draw 1 card.,,1,3,ASH,ASH,on_normal_summon_draw1,final
+Crypt Bat,1,dungeon,melee,yes,common,Swap places with any Unit you control on the board.,,1,4,ASH,ASH,swap_friendly,final
+Flaming Jack Rabbit,1,lava,melee,yes,common,"If this card would be discarded or destroyed, shuffle it into your deck instead of sending it to the Discard pile.",,1,5,ASH,ASH,recycle_self,final
+Cinder Bat,1,lava,melee,yes,common,On Death: adjacent Lava Dwellers add +1 to their next roll this turn; adjacent non-Lava Dwellers subtract 1 from their next roll this turn.,,1,6,ASH,ASH,death_lava_swing,final
+Disembodied Hand,1,dungeon,melee,yes,common,"Roll this Unit's die. On a 1, 3 or 5, look at the top card of your opponent's deck and return it to the top.",,1,7,ASH,ASH,peek_top,final
+Skeleton,1,dungeon,melee,yes,common,,,1,8,ASH,ASH,vanilla,final
+Skeletal Archer,1,dungeon,ranged,yes,common,,,1,9,ASH,ASH,vanilla,final
+Graveyard Wraith,1,dungeon,melee,yes,common,Dungeon Dwellers in the 8 adjacent squares add +1 to their rolls.,,1,10,ASH,ASH,aura_plus1_dungeon,final
+Ash Skink,1,lava,melee,yes,common,On Normal Summon: draw 1 card.,,1,11,ASH,ASH,on_normal_summon_draw1,final
+Undead Hound,1,dungeon,melee,yes,common,When destroyed: search your deck for a Tier 1 or Tier 2 Dungeon Dweller and add it to your hand.,,1,12,ASH,ASH,death_search_dungeon,final
+Ember Wisp,1,lava,ranged,yes,common,When destroyed: search your deck for a Tier 1 or Tier 2 Lava Dweller and add it to your hand.,,1,13,ASH,ASH,death_search_lava,final
+Grave Snare,1,dungeon,melee,yes,common,"May be Set face down. If battled, after damage is applied the attacker subtracts 2 from its next roll this turn.",,1,14,ASH,ASH,trap_debuff2,final
+Immolation Trap,1,lava,melee,yes,common,"May be Set face down. If battled, after damage is applied, destroy both this Unit and the attacker.",,1,15,ASH,ASH,trap_mutual_destruct,final
+Grave Shifter,1,dungeon,melee,yes,uncommon,"Swap places with any Unit on the board, yours or your opponent's.",,1,16,ASH,ASH,swap_any,final
+Immovable Bog,1,dungeon,melee,no,common,Dungeon and Forest Dwellers in the 8 adjacent squares add +1 to their rolls. All other Dweller Types in those squares subtract 3.,,1,17,ASH,ASH,aura_bog,final
+Molten Field,1,lava,melee,no,common,"Lava Dwellers in the 8 adjacent squares add +1 to their rolls. At the start of your Recruitment Phase, Special Summon 1 Wisp Token to your Barracks.",,1,18,ASH,ASH,aura_lava_and_wisp,final
+Cinder Skeleton,1,lava,ranged,yes,common,During your Recruitment Phase: you may attach this card from your hand to an adjacent Lava Dweller you control as a Ride. This does not use your Normal Summon.,,1,19,ASH,ASH,ride_from_hand_lava,final
+Bone Diviner,1,dungeon,ranged,yes,uncommon,"Discard this card from your hand, then roll a d6. On 1 to 4, every Unit your opponent controls of the corresponding Tier subtracts 2 from its rolls until the end of their next turn. On 5 or 6, nothing happens.",,1,20,ASH,ASH,bone_diviner,final
+Magma Mine,1,lava,ranged,yes,uncommon,"Discard this card from your hand, then roll a d6. On 1 to 4, destroy 1 Unit your opponent controls of the corresponding Tier. On 5 or 6, nothing happens.",,1,21,ASH,ASH,magma_mine,final
+Armored Skeleton,2,dungeon,melee,yes,common,,,1,22,ASH,ASH,vanilla,final
+Skeleton Archer,2,dungeon,ranged,yes,common,,,1,23,ASH,ASH,vanilla,final
+Skeletal Mage,2,dungeon,ranged,yes,common,"Once per turn: roll this Unit's die. On a 7 or 8, mill the top 2 cards of your opponent's deck.",,1,24,ASH,ASH,mage_mill,final
+Shallow Grave,2,dungeon,melee,no,common,Mandatory. Every Recruitment Phase: Special Summon 1 Zombie Token to your Barracks. This is not optional.,,1,25,ASH,ASH,spawn_zombie_mandatory,final
+Fire Imp,2,lava,ranged,yes,common,,,1,26,ASH,ASH,vanilla,final
+Undead Mare,2,dungeon,melee,yes,common,"If a Tier 1 Unit Rides this card, the stack adds +2 to its roll in battle.",,1,27,ASH,ASH,ridden_by_t1_plus2,final
+Ghoul Rider,2,dungeon,melee,yes,common,Sacrifice a Ride stack you control: Special Summon a Unit one Tier higher than the stack's highest Tier from your hand.,,1,28,ASH,ASH,ascend_hand,final
+Slagborn,2,lava,melee,yes,common,Sacrifice a Ride stack you control: Special Summon a Unit one Tier higher than the stack's highest Tier from your hand.,,1,29,ASH,ASH,ascend_hand,final
+Goblin Bomb Carrier,2,lava,melee,yes,uncommon,"May be Set face down. If this Unit is destroyed by an opponent's card, add 1 Magma Mine from your deck to your hand.",,1,30,ASH,ASH,death_fetch_mine,final
+Flesh Collector,2,dungeon,melee,yes,epic,Wields a battle axe (d8). Cleave on a combat win.,,1,31,ASH,ASH,cleave,final
+Gargoyle,3,dungeon,melee,yes,uncommon,,,1,32,ASH,ASH,vanilla,final
+Dungeon Door,3,dungeon,melee,no,uncommon,This Unit and adjacent Units you control add +1 to their rolls. Any Dweller Type. Rolls a d8. Deliberately has no Taunt.,,1,33,ASH,ASH,aura_plus1_any_incl_self,final
+Charnel Warden,3,dungeon,ranged,yes,uncommon,Once per turn during your Recruitment Phase: banish 1 card from your Discard pile to Special Summon 1 Zombie Token.,,1,34,ASH,ASH,banish_for_zombie,final
+Ashen Lancer,3,dungeon,melee,yes,rare,"When this Unit moves during the Battle Phase, every Unit you control adjacent to it moves the same number of squares in the same direction. This does not use those Units' own movement.",,1,35,ASH,ASH,formation_move,final
+Ash Golem,3,lava,melee,yes,rare,This Unit adds +1 to its roll for each Wisp Token adjacent to it.,,1,36,ASH,ASH,wisp_scaling,final
+Ashlands,3,lava,melee,no,rare,Dungeon and Lava Dwellers in the 8 adjacent squares add +2 to their rolls. No penalty to anything else.,,1,37,ASH,ASH,aura_plus2_dungeon_lava,final
+Lavagoyle,3,lava,melee,yes,common,,,1,38,ASH,ASH,vanilla,final
+Lich King,4,dungeon,ranged,yes,legendary,Once per turn during your Recruitment Phase: Special Summon 1 Tier 1 Dungeon Dweller from your Discard pile to an empty Barracks square.,,1,39,ASH,ASH,raise_t1_from_discard,final
+Death Knight,4,dungeon,melee,yes,rare,,,1,40,ASH,ASH,vanilla,final
+Corrupted Paladin,4,dungeon,melee,yes,epic,"Once per turn: roll this Unit's die. On an even result, destroy 1 Unit your opponent controls. On an odd result, banish 1 Unit from your opponent's Discard pile.",,1,41,ASH,ASH,paladin_even_odd,final
+Zombie Token,1,dungeon,melee,yes,common,Token. Not part of your deck. Cannot be Set face-down. Cannot be Tributed.,,1,42,ASH,ASH,token,final
+Wisp Token,1,lava,ranged,yes,common,Token. Not part of your deck. Cannot be Set face-down. Cannot be Tributed.,,1,43,ASH,ASH,token,final
+Skeleton Knight Token,2,dungeon,melee,yes,common,Token. Not part of your deck. Cannot be Set face-down. Cannot be Tributed.,,1,44,ASH,ASH,token,final
+Charnel Reaper,3,dungeon,ranged,yes,rare,Banish 2 cards from your Discard pile: Special Summon 2 Tokens adjacent to this Unit.,,1,45,ASH,ASH,charnel_reaper,final
+Bone Harvester,3,dungeon,melee,yes,epic,Discard up to 3 cards from your hand: Special Summon that many Tokens.,,1,46,ASH,ASH,bone_harvester,final
+Charnel Sovereign,4,dungeon,melee,yes,legendary,"Special Summon up to 4 Skeleton Knight Tokens. Pay the cost in any combination of banishing Dungeon Dwellers from your Discard pile, discarding from your hand, or milling from your deck.",,1,47,ASH,ASH,charnel_sovereign,final
+Grave Tracker,1,dungeon,ranged,yes,uncommon,On Normal Summon: search your deck for 1 Tier 1 to Tier 3 Dungeon Dweller and add it to your hand.,,1,48,ASH,ASH,search_summon_dungeon,final
+Cinder Stalker,1,lava,melee,yes,uncommon,On Normal Summon: search your deck for 1 Tier 1 to Tier 3 Lava Dweller and add it to your hand.,,1,49,ASH,ASH,search_summon_lava,final
+Sepulcher Hunter,1,dungeon,melee,yes,epic,While this card is in your Discard pile you may banish it: search your deck for 1 Tier 1 to Tier 4 Dungeon Dweller and add it to your hand.,,1,50,ASH,ASH,search_banish_dungeon,final
+Magma Seeker,1,lava,ranged,yes,epic,While this card is in your Discard pile you may banish it: search your deck for 1 Tier 1 to Tier 4 Lava Dweller and add it to your hand.,,1,51,ASH,ASH,search_banish_lava,final
+Ossuary Warden,1,dungeon,melee,yes,legendary,Discard this card from your hand: search your deck for 1 Tier 1 to Tier 4 Dungeon Dweller and add it to your hand.,,1,52,ASH,ASH,search_discard_dungeon,final
+Pyre Warden,1,lava,ranged,yes,legendary,Discard this card from your hand: search your deck for 1 Tier 1 to Tier 4 Lava Dweller and add it to your hand.,,1,53,ASH,ASH,search_discard_lava,final
+Bonecarver,2,dungeon,ranged,yes,uncommon,Sacrifice a Ride stack you control: Special Summon a Unit one Tier higher than the stack's highest Tier from your hand or deck.,,1,54,ASH,ASH,ascend_hand_deck,final
+Emberwright,2,lava,ranged,yes,uncommon,Sacrifice a Ride stack you control: Special Summon a Unit one Tier higher than the stack's highest Tier from your hand or deck.,,1,55,ASH,ASH,ascend_hand_deck,final
+Tower of Bones,3,dungeon,ranged,no,epic,Sacrifice a Ride stack you control: Special Summon a Unit one Tier higher than the stack's highest Tier from your Discard pile or deck.,,1,56,ASH,ASH,ascend_discard_deck,final
+Pyre,3,lava,ranged,no,epic,Sacrifice a Ride stack you control: Special Summon a Unit one Tier higher than the stack's highest Tier from your Discard pile or deck.,,1,57,ASH,ASH,ascend_discard_deck,final
+Crypt Caller,3,dungeon,melee,yes,legendary,Sacrifice a Ride stack you control: Special Summon 1 Dungeon Dweller from your Discard pile to that stack's square. No Tier restriction.,,1,58,ASH,ASH,ascend_crypt_caller,final
+Magma Minefield,3,lava,melee,no,rare,Once per turn: add 1 Magma Mine from your deck or Discard pile to your hand.,,1,59,ASH,ASH,fetch_magma_mine,final
+Undead Drake,3,dungeon,melee,yes,common,(stats not yet assigned),,1,60,ASH,ASH,,stub
+Undead Cavalry,2,dungeon,melee,yes,common,(stats not yet assigned),,1,61,ASH,ASH,,stub
