@@ -1192,13 +1192,15 @@ function actionsFrom(r,c){
     for(const t of reach){
       const z=zone(t.r,t.c),o=G.board[t.r][t.c];
       if(o&&o.own===foe){
-        if(!isUntargetable(t.r,t.c)) out.push({r:t.r,c:t.c,k:"attack"});
+        // far matters: the Ranged parry only applies at extended reach
+        if(!isUntargetable(t.r,t.c)) out.push({r:t.r,c:t.c,k:"attack",far:!!t.far});
       }
       else if(!o&&z.own===foe&&z.kind==="barr"&&!twrSafe) out.push({r:t.r,c:t.c,k:"tower"});
     }
   }
   const seen=new Set();
-  return out.filter(a=>{const k=a.r+","+a.c+","+a.k; if(seen.has(k))return false; seen.add(k); return true;});
+  return out.filter(a=>{const k=a.r+","+a.c+","+a.k+","+(a.far?"F":"N");
+    if(seen.has(k))return false; seen.add(k); return true;});
 }
 
 /* ---- resolution ---- */
@@ -1275,7 +1277,7 @@ function resolve(s,a){
     if(u.fd){ u.fd=false; }
     const am=modAt(s.r,s.c,u), dm=modAt(a.r,a.c,d);
     let A=rollDetail(u,am), D=rollDetail(d,dm);
-    say("h",`ATTACK ${label(u)} → ${label(d)}`);
+    say("h",`ATTACK ${label(u)} → ${label(d)}${a.far?"  (at range)":""}`);
     flyRoll(me, A.total, "attacker", "");
     flyRoll(d.own, D.total, "defender", "");
     // pause here: the human player may spend Orion's Blessing on EITHER die
@@ -1299,8 +1301,28 @@ function finishAttack(s,a,u,d,A,D,am,dm,defWasFaceDown){
     say("",`  ${dieTxt(u)}${fmtMod(am)} = ${A.total}   vs   ${dieTxt(d)}${fmtMod(dm)} = ${D.total}`);
     flyRoll(me, A.total, "attacker", A.total>D.total?"win":A.total<D.total?"lose":"");
     flyRoll(d.own, D.total, "defender", D.total>A.total?"win":D.total<A.total?"lose":"");
+    /* RANGED PARRY  (rulebook lines 197-206, 405-406)
+       A Ranged Unit striking a Melee Unit at EXTENDED reach must roll strictly
+       higher, or the Melee Unit parries and nobody dies. The Ranged Unit is
+       never at risk while it keeps its distance. Standing adjacent forfeits
+       that protection entirely - then it is an ordinary roll-off.
+       A mixed stack does NOT get parried: it carries a Ranged Unit, so it can
+       shoot back. */
+    const atRange      = !!a.far;
+    const defAllMelee  = d.cards.every(c=>c.attack==="melee");
+    const rangedParry  = atRange && isRanged(u) && defAllMelee;
+
     let verdict,vc;
-    if(A.total>D.total){ verdict="ATTACKER WINS"; vc="v-win"; kill(a.r,a.c); }
+    if(rangedParry){
+      if(A.total>D.total){
+        verdict="RANGED STRIKE LANDS"; vc="v-win"; kill(a.r,a.c);
+      } else {
+        verdict="PARRIED — NOBODY FALLS"; vc="v-tie";
+        say("r","  PARRY — the Ranged attacker did not roll strictly higher, so the "
+              +"Melee Unit turns it aside. At range the archer is never at risk.");
+      }
+    }
+    else if(A.total>D.total){ verdict="ATTACKER WINS"; vc="v-win"; kill(a.r,a.c); }
     else if(A.total<D.total){ verdict="DEFENDER HOLDS"; vc="v-lose"; kill(s.r,s.c); }
     else if(A.total===0 && D.total===0){
       // Both rolls were dragged to the floor by debuffs. Two Units that cannot
