@@ -72,7 +72,9 @@ button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 
 /* ============================== chrome =============================== */
 .bar{display:flex;align-items:center;gap:var(--pad);padding:var(--pad) calc(var(--pad)*1.5);
-  background:var(--panel);border-bottom:1px solid #000;flex:0 0 auto}
+  background:var(--panel);border-bottom:1px solid #000;flex:0 0 auto;
+  /* room for the fixed audio dock, which sits over the top-left corner */
+  padding-left:5.6em}
 .bar .grow{flex:1}
 .tbtn{font-family:var(--ui);font-size:.95em;padding:.62em 1.15em;min-height:2.6em;
   border:1px solid var(--edge);border-radius:4px;background:#2a2318;letter-spacing:.02em}
@@ -303,6 +305,13 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .cvfoot{display:flex;gap:.4em;margin-top:.45em;font-family:var(--ui);font-size:.8em}
 .cvfoot span{flex:1;background:#efe7d3;border:1px solid #8d7c58;border-radius:3px;
   text-align:center;padding:.3em;text-transform:uppercase;letter-spacing:.05em}
+#audioDock{position:fixed;top:.55em;left:.6em;z-index:120;display:flex;gap:.25em;opacity:.55;
+  transition:opacity .2s}
+#audioDock:hover{opacity:1}
+#audioDock .tbtn{padding:.3em .55em;font-size:1em;line-height:1;min-width:2.1em}
+#audioDock .tbtn.off{color:#6d6152;text-decoration:line-through;opacity:.75}
+@media (max-width:820px){ #audioDock{top:auto;bottom:.5em;left:.5em;opacity:.8} }
+@media (orientation:landscape) and (max-height:600px){ #audioDock{top:.3em;bottom:auto} }
 .sheet .stat{font-family:var(--ui);color:var(--dim);letter-spacing:.1em;
   text-transform:uppercase;font-size:.85em;margin:.2em 0 .8em}
 .sheet .txt{background:linear-gradient(160deg,var(--parch),var(--parch2));color:#1a150f;
@@ -609,6 +618,11 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
   </div>
 </div>
 
+<div id="audioDock">
+  <button class="tbtn" id="btnMus" title="background music (M)">&#9835;</button
+  ><button class="tbtn" id="btnSfx" title="sound effects (N)">&#9836;</button>
+</div>
+
 <!-- ============================ GAME ============================= -->
 <div class="screen" id="game">
   <div class="bar">
@@ -617,7 +631,6 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
     <span class="tag" id="phaseTag"></span>
     <span class="grow"></span>
     <span class="tag" id="decks"></span>
-    <button class="tbtn" id="btnMus" title="background music">&#9835;</button><button class="tbtn" id="btnSfx" title="sound effects">&#9836;</button>
     <button class="tbtn" id="btnRules">Rules</button>
   </div>
   <div class="body">
@@ -1050,9 +1063,26 @@ function paintAudioBtns(){
   $("btnMus").classList.toggle("off", !MUS_ON);
   $("btnSfx").classList.toggle("off", !SFX_ON);
 }
-$("btnMus").onclick=()=>{ MUS_ON=!MUS_ON; paintAudioBtns();
-  if(!MUS_ON) stopMusic(); else musicScene(); if(SFX_ON) sfx("click"); };
-$("btnSfx").onclick=()=>{ SFX_ON=!SFX_ON; paintAudioBtns(); if(SFX_ON) sfx("click"); };
+function toggleMus(){ MUS_ON=!MUS_ON; savePref("toa_mus",MUS_ON); paintAudioBtns();
+  if(!MUS_ON) stopMusic(); else musicScene(); if(SFX_ON) sfx("click"); }
+function toggleSfx(){ SFX_ON=!SFX_ON; savePref("toa_sfx",SFX_ON); paintAudioBtns(); if(SFX_ON) sfx("click"); }
+$("btnMus").onclick=toggleMus;
+$("btnSfx").onclick=toggleSfx;
+/* Restore the previous choice. Someone who muted the music last time should
+   not have it start again the moment they open the page. */
+try{
+  const m=localStorage.getItem("toa_mus"), n=localStorage.getItem("toa_sfx");
+  if(m!==null) MUS_ON = m==="true";
+  if(n!==null) SFX_ON = n==="true";
+}catch(e){}
+/* NOT called save() - save() already persists the deck STORE, and a second
+   declaration would silently replace it and stop decks saving. */
+function savePref(k,v){ try{ localStorage.setItem(k, String(v)); }catch(e){} }
+addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA") return;
+  if(e.key==="m"||e.key==="M") toggleMus();
+  if(e.key==="n"||e.key==="N") toggleSfx();
+});
 paintAudioBtns();
 
 
