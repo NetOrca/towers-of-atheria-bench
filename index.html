@@ -495,7 +495,7 @@ const SIMULATED = new Set([...Object.keys(AURA),"vanilla","token","",
   "odd_snipe","paladin_even_odd","mage_mill","ballista_gamble","catapult_d8_edict",
   "magma_mine","bone_diviner","cycle_two","recur_honor_to_deck","recruit_recur_any",
   "unbanish_to_hand","search_forest_low","raise_t1_from_discard","banish_for_zombie",
-  "spawn_bear_token","spawn_squirrel_token","aegis_mass_recur",
+  "spawn_bear_token","spawn_squirrel_token","aegis_mass_recur","hand_reroll",
   "search_summon_dungeon","search_summon_lava","search_banish_dungeon",
   "search_banish_lava","search_discard_dungeon","search_discard_lava"]);
 
@@ -983,6 +983,7 @@ function startOfRecruitment(){
     }
   }
   for(const {u} of unitsOf(G.cur)) u.struckTwice=false;
+  (G.rerollMuted=G.rerollMuted||{})[G.cur]=false;
 }
 function toBattle(){
   G.phase=2; G.mode=null; G.sel=null;
@@ -1104,16 +1105,21 @@ function resolve(s,a){
     return;
   }
   if(a.k==="tower"){
-    const res=rollDetail(u,modAt(s.r,s.c,u));
+    let res=rollDetail(u,modAt(s.r,s.c,u));
     flyRoll(me,res.total,"Tower strike","tower");
+    offerReroll(me,[{key:"T",who:"your Tower strike",unit:u,res}],(out)=>{
+      if(out&&out.T) res=out.T;
+      finishTower(s,a,u,me,foe,res); render();
+    });
+    return;
+  }
+  if(false){
+    let res=null;
     fxPanel(`<div class="fxrow">
       <div><div class="who">${label(u)}</div>${diceHTML(res,me)}</div>
       <div>→</div><div><div class="who">P${foe} TOWER</div>
       <div class="sum" style="color:var(--bad)">−${res.total}</div></div></div>
       <div class="verdict v-tower">TOWER STRUCK</div>`);
-    say("h",`${label(u)} strikes the P${foe} Tower through an empty Barracks`);
-    millTower(foe,res.total,u);
-    u.acted=true; u.tapped=true;
     return;
   }
   if(a.k==="attack"){
@@ -1121,11 +1127,30 @@ function resolve(s,a){
     if(d.fd){ d.fd=false; say("r",`  FACE-DOWN REVEALED → ${label(d)}`); }
     if(u.fd){ u.fd=false; }
     const am=modAt(s.r,s.c,u), dm=modAt(a.r,a.c,d);
-    const A=rollDetail(u,am), D=rollDetail(d,dm);
+    let A=rollDetail(u,am), D=rollDetail(d,dm);
+    say("h",`ATTACK ${label(u)} → ${label(d)}`);
+    flyRoll(me, A.total, "attacker", "");
+    flyRoll(d.own, D.total, "defender", "");
+    // pause here: the human player may spend Orion's Blessing on EITHER die
+    offerReroll(me, [
+      {key:"A", who:"your roll",      unit:u, res:A},
+      {key:"D", who:"their roll",     unit:d, res:D}
+    ], (out)=>{
+      if(out&&out.A) A=out.A;
+      if(out&&out.D) D=out.D;
+      finishAttack(s,a,u,d,A,D,am,dm);
+      render();
+    });
+    return;
+  }
+}
+
+function finishAttack(s,a,u,d,A,D,am,dm){
+  {
+    const me=u.own;
+    say("",`  ${dieTxt(u)}${fmtMod(am)} = ${A.total}   vs   ${dieTxt(d)}${fmtMod(dm)} = ${D.total}`);
     flyRoll(me, A.total, "attacker", A.total>D.total?"win":A.total<D.total?"lose":"");
     flyRoll(d.own, D.total, "defender", D.total>A.total?"win":D.total<A.total?"lose":"");
-    say("h",`ATTACK ${label(u)} → ${label(d)}`);
-    say("",`  ${dieTxt(u)}${fmtMod(am)} = ${A.total}   vs   ${dieTxt(d)}${fmtMod(dm)} = ${D.total}`);
     let verdict,vc;
     if(A.total>D.total){ verdict="ATTACKER WINS"; vc="v-win"; kill(a.r,a.c); }
     else if(A.total<D.total){ verdict="DEFENDER HOLDS"; vc="v-lose"; kill(s.r,s.c); }
@@ -1146,6 +1171,12 @@ function resolve(s,a){
     }
     return;
   }
+}
+function finishTower(s,a,u,me,foe,res){
+  fxPanel("");
+  say("h",`${label(u)} strikes the P${foe} Tower through an empty Barracks`);
+  millTower(foe,res.total,u);
+  u.acted=true; u.tapped=true;
 }
 const fmtMod=m=>m?` ${m>0?"+":""}${m}`:"";
 function diceHTML(res,p){
@@ -1259,6 +1290,57 @@ function npcTurn(){
 
 
 
+
+
+/* ===================================================================
+   REROLL INTERRUPT  (Orion's Blessing)
+   "Discard this card from your hand: force a reroll of any one dice roll."
+   This is REACTIVE - it happens after a roll is shown, not in Recruitment.
+   The engine had no such moment, which is why activating it did nothing.
+   Combat therefore pauses here and resumes in a callback.
+   The card says ANY one roll, so you may reroll the enemy's die too.
+   =================================================================== */
+function holdsOrion(p){
+  return G.P[p].hand.findIndex(c=>c.fx==="hand_reroll");
+}
+function spendOrion(p){
+  const i=holdsOrion(p); if(i<0) return false;
+  const card=G.P[p].hand.splice(i,1)[0];
+  G.P[p].disc.push(card);
+  say("h",`${card.name} — discarded to force a reroll`);
+  return true;
+}
+/* opts: [{key,label,unit,res,who}]  cb(resultsByKey) */
+function offerReroll(player, opts, cb){
+  const npcSide = NPC_ON && player===2;
+  if(npcSide || G.rerollMuted?.[player] || holdsOrion(player)<0) return cb(null);
+  const rows = opts.map(o=>
+    `<button class="bigbtn go" style="min-width:180px"
+       onclick="doReroll('${o.key}')">&#8635; Reroll ${esc(o.who)} (${o.res.total})</button>`).join("");
+  REROLL_CB = {opts, cb, player};
+  modal(`<div class="sheet">
+    <h2>&#8635; Orion's Blessing</h2>
+    <div class="stat">discard it to reroll any one die</div>
+    <div class="row" style="flex-direction:column;align-items:stretch">${rows}</div>
+    <div class="row">
+      <button class="bigbtn" onclick="doReroll('')">Keep</button>
+      <button class="bigbtn" onclick="doReroll('mute')">Keep all turn</button>
+    </div></div>`);
+}
+let REROLL_CB=null;
+function doReroll(key){
+  const ctx=REROLL_CB; REROLL_CB=null; closeModal();
+  if(!ctx) return;
+  if(key==="mute"){ (G.rerollMuted=G.rerollMuted||{})[ctx.player]=true; return ctx.cb(null); }
+  if(!key) return ctx.cb(null);
+  const o=ctx.opts.find(x=>x.key===key);
+  if(!o || !spendOrion(ctx.player)) return ctx.cb(null);
+  const fresh=rollDetail(o.unit, o.res.mod);
+  say("g",`  ${o.who} rerolls: ${o.res.total} → ${fresh.total}`);
+  flyRoll(o.unit.own, fresh.total, "reroll", "tower");
+  ctx.cb({[key]:fresh});
+}
+window.doReroll=doReroll;
 
 /* ===================================================================
    EFFECT ENGINE
