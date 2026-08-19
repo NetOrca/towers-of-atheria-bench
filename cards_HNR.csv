@@ -1,6 +1,6 @@
 name,tier,type,attack,movable,rarity,skill,art,quantity,card_no,set_code,release_code,fx,status
 Aegis the Unbroken,4,honor,melee,yes,legendary,On Summon by any method: you may banish 5 cards from your hand to return all Units in your Discard pile to your deck. All or nothing.,,1,1,HNR,HNR,aegis_mass_recur,final
-Ironhide Sentinel,4,forest,melee,yes,epic,"While this Unit is on the field, your opponent's Tower cannot be attacked.",,1,2,HNR,HNR,tower_lock,final
+Ironhide Sentinel,4,forest,melee,yes,epic,"While this Unit is on the field, your Tower cannot be attacked.",,1,2,HNR,HNR,protect_own_tower,final
 "Alexia, the Silver Sword",4,honor,melee,yes,epic,Multistrike - if this Unit wins a combat roll it may attack a second time this Battle Phase. Optional. Maximum 2 attacks per phase.,,1,3,HNR,HNR,multistrike,final
 Alfred the Noble Knight,3,honor,melee,yes,rare,Adjacent Tier 1 and Tier 2 Units you control add +3 to their rolls. Does not buff this Unit.,,1,4,HNR,HNR,aura_plus3_low_tier,final
 "Garrek, the Steel Wind",3,honor,melee,yes,epic,"When this Unit rolls in combat, an even result destroys the enemy Unit outright regardless of its roll.",,1,5,HNR,HNR,even_kill,final

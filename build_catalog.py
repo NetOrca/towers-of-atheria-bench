@@ -143,9 +143,11 @@ card("Aegis the Unbroken", S, 4, "honor", "legendary", "melee", True,
      "On Summon by any method: you may banish 5 cards from your hand to return "
      "all Units in your Discard pile to your deck. All or nothing.",
      "aegis_mass_recur")
+# Corrected Aug 2026: this said "your opponent's Tower", which had him
+# defending the enemy. He is a gatekeeper - he protects the Tower behind him.
 card("Ironhide Sentinel", S, 4, "forest", "epic", "melee", True,
-     "While this Unit is on the field, your opponent's Tower cannot be attacked.",
-     "tower_lock")
+     "While this Unit is on the field, your Tower cannot be attacked.",
+     "protect_own_tower")
 card("Alexia, the Silver Sword", S, 4, "honor", "epic", "melee", True,
      "Multistrike - if this Unit wins a combat roll it may attack a second time "
      "this Battle Phase. Optional. Maximum 2 attacks per phase.",
@@ -531,8 +533,17 @@ card("Magma Minefield", S, 3, "lava", "rare", "melee", False,
      "Once per turn: add 1 Magma Mine from your deck or Discard pile to your hand.",
      "fetch_magma_mine")
 
-stub("Undead Drake",   S, 3, "dungeon")
-stub("Undead Cavalry", S, 2, "dungeon")
+# Skills are AJ's, confirmed. Tier / rarity / attack / movement are still my
+# placeholders from the asset-reuse notes, so these stay "partial" until he
+# sets them - the status flag is what stops a guess being treated as balanced.
+card("Undead Drake", S, 3, "dungeon", "rare", "melee", True,
+     "Once per turn: if this Unit is part of a Ride stack, send this card to "
+     "the Discard pile instead of destroying the stack.",
+     "drake_saves_stack", status="partial")
+card("Undead Cavalry", S, 2, "dungeon", "rare", "melee", True,
+     "Discard 2 cards: Special Summon this Unit from your hand or your "
+     "Discard pile.",
+     "cavalry_self_summon", status="partial")
 
 # ======================================================================
 # emit

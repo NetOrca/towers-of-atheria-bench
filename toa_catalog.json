@@ -22,8 +22,8 @@
   "rarity": "epic",
   "attack": "melee",
   "movable": true,
-  "skill": "While this Unit is on the field, your opponent's Tower cannot be attacked.",
-  "fx": "tower_lock",
+  "skill": "While this Unit is on the field, your Tower cannot be attacked.",
+  "fx": "protect_own_tower",
   "status": "final",
   "art_note": "Armoured grizzly bear."
  },
@@ -1419,12 +1419,12 @@
   "set": "ASH",
   "tier": 3,
   "dweller": "dungeon",
-  "rarity": "common",
+  "rarity": "rare",
   "attack": "melee",
   "movable": true,
-  "skill": "(stats not yet assigned)",
-  "fx": null,
-  "status": "stub",
+  "skill": "Once per turn: if this Unit is part of a Ride stack, send this card to the Discard pile instead of destroying the stack.",
+  "fx": "drake_saves_stack",
+  "status": "partial",
   "art_note": "Flying Drake, explicitly NOT a true dragon. Tattered wings, looks weak and decrepit but is stronger than it looks. Same asset as Crypt Caller's mount."
  },
  {
@@ -1433,12 +1433,12 @@
   "set": "ASH",
   "tier": 2,
   "dweller": "dungeon",
-  "rarity": "common",
+  "rarity": "rare",
   "attack": "melee",
   "movable": true,
-  "skill": "(stats not yet assigned)",
-  "fx": null,
-  "status": "stub",
+  "skill": "Discard 2 cards: Special Summon this Unit from your hand or your Discard pile.",
+  "fx": "cavalry_self_summon",
+  "status": "partial",
   "art_note": "Death Knight riding the Undead Mare. A combination card reusing two existing models, not a new sculpt."
  }
 ]
