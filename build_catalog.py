@@ -223,6 +223,15 @@ card("Makeshift Ballista", S, 1, "honor", "common", "ranged", False,
      "Once per turn: roll this Unit's die. Even - mill the top card of your "
      "opponent's deck. Odd - destroy this Unit.",
      "ballista_gamble")
+# DESIGN INTENT (AJ): lifted from Yu-Gi-Oh's Honest, and the 3-copy deck limit
+# is the whole point - it forces the "save a small Unit now, or hold it as a
+# trap for something worse later" decision. Deliberately triggers too-good-to-use
+# syndrome.
+# ONE DIFFERENCE FROM HONEST, worth keeping in mind: Honest is deterministic and
+# always wins the fight. A REROLL can land lower than the roll it replaced, so
+# this version is a gamble, not a guarantee. It also rewards reading die sizes -
+# with a d12 on 4 against a d6 on 5, rerolling YOUR die wins 58% while rerolling
+# THEIRS wins 50%, and swapping the die sizes reverses that.
 card("Orion's Blessing", S, 1, "honor", "common", "ranged", True,
      "Discard this card from your hand: force a reroll of any one dice roll.",
      "hand_reroll")
