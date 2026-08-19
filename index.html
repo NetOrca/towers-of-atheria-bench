@@ -28,10 +28,12 @@
   --ink:#1c1710; --parch:#e8dcc0; --parch2:#d8c9a6; --edge:#6b5a3e;
   --p1:#3f6fa8; --p2:#b4762c; --gold:#c9a227; --bad:#8a3f36; --good:#4a7c46;
   --panel:#211c15; --panel2:#2c251b; --dim:#8a7a5e;
-  /* Fallback only. fitBoard() measures the real chrome at runtime and
-     overrides this, because guessing the leftover height never survives
-     a different screen. */
-  --u: clamp(52px, min(13vw, 11vh), 150px);
+  /* Fallback only. fitBoard() measures the real chrome at runtime.
+     Squares are WIDER than tall - the board is 5 across and 6 deep, so
+     letting width run ahead fills the space either side without pushing
+     the bottom row off screen. */
+  --uh: clamp(46px, 10.5vh, 132px);
+  --uw: clamp(52px, 13vw, 176px);
   --pad: clamp(6px, 1.2vmin, 14px);
   --fs: clamp(14px, 1.75vmin, 19px);
   --ui: system-ui,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
@@ -127,7 +129,7 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 #game .body{flex:1;display:flex;min-height:0}
 #boardWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
   gap:calc(var(--pad)*.8);padding:var(--pad);min-width:0;overflow:auto}
-#board{display:grid;grid-template-columns:repeat(5,var(--u));grid-template-rows:repeat(6,var(--u));
+#board{display:grid;grid-template-columns:repeat(5,var(--uw));grid-template-rows:repeat(6,var(--uh));
   gap:3px;background:#0d0b08;padding:3px;border:1px solid var(--edge);border-radius:3px}
 .sq{position:relative;border-radius:2px;display:grid;place-items:center;overflow:hidden}
 .z-open{background:#191610}
@@ -211,11 +213,18 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
   font-family:var(--ui);font-size:.9em;border:1px solid #6b5a3e}
 .tile .info:hover{background:var(--gold);color:#1c1710}
 
-#selbar{display:none;gap:.6em;align-items:center;flex-wrap:wrap;justify-content:center;
-  padding:.55em .8em;background:var(--panel2);border:1px solid var(--edge);border-radius:4px;
-  width:100%;max-width:min(100%,1100px);font-family:var(--ui)}
-#selbar.on{display:flex}
+#selbar{display:flex;gap:.7em;align-items:center;flex-wrap:wrap;
+  padding:.6em .9em;background:linear-gradient(#2f2819,#241e14);
+  border:1px solid var(--edge);border-radius:5px;
+  width:100%;max-width:min(100%,1250px);font-family:var(--ui);min-height:64px}
 #selbar .who2{font-weight:700;color:var(--parch)}
+#selbar .spacer{flex:1}
+#selbar .phaseNow{color:var(--gold);font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;font-size:.88em}
+#selbar .hint{color:var(--dim);font-size:.9em}
+.bigbtn.phase{background:linear-gradient(#c9a227,#9c7c15);color:#1c1710;
+  border-color:#e6c455;font-size:1.02em;padding:.6em 1.4em;font-weight:800}
+.bigbtn.phase:disabled{opacity:.4;cursor:default}
 
 .sheet{max-width:min(560px,94vw)}
 .sheet .stat{font-family:var(--ui);color:var(--dim);letter-spacing:.1em;
@@ -302,7 +311,6 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
     <span class="tag" id="phaseTag"></span>
     <span class="grow"></span>
     <span class="tag" id="decks"></span>
-    <button class="tbtn" id="btnPhase">Next Phase</button>
     <button class="tbtn" id="btnRules">Rules</button>
   </div>
   <div class="body">
@@ -712,12 +720,7 @@ function endTurn(){
   render();
   if(NPC_ON&&G.cur===2&&!G.over&&!NPC_BUSY) setTimeout(npcTurn,520);
 }
-$("btnPhase").onclick=()=>{
-  if(G.over) return;
-  if(NPC_ON&&G.cur===2) return;
-  if(G.phase===1) toBattle(); else if(G.phase===2) endTurn();
-  render();
-};
+/* the phase button now lives in the match action bar - see renderSelBar() */
 
 /* ---- summoning ---- */
 const tributeCost=t=>t-1;
@@ -891,7 +894,11 @@ function cellClick(r,c){
     if(a){ resolve(G.sel,a); G.sel=null; return render(); }
   }
   const u=G.board[r][c];
-  G.sel=(u&&u.own===G.cur&&G.phase===2)?{r,c}:null;
+  // Selectable in Recruitment AND Battle. Recruitment is when Active Skills
+  // resolve, so locking selection to Battle made every field Skill unusable.
+  // actionsFrom() still returns nothing outside Battle, so no move/attack
+  // highlights appear during Recruitment - only the Skill panel.
+  G.sel=(u&&u.own===G.cur&&(G.phase===1||G.phase===2))?{r,c}:null;
   render();
 }
 
@@ -1012,19 +1019,31 @@ function doActivate(cardId){
 window.doActivate=doActivate;
 
 function renderSelBar(){
-  const bar=$("selbar");
-  if(!G || !G.sel || !G.board[G.sel.r][G.sel.c]){ bar.className=""; bar.innerHTML=""; return; }
-  const u=G.board[G.sel.r][G.sel.c];
-  if(u.fd){ bar.className="on";
-    bar.innerHTML=`<span class="who2">Face-down Unit at ${rcName(G.sel.r,G.sel.c)}</span>
-      <span class="tag">hidden until it is attacked or flipped</span>`; return; }
-  const m=modAt(G.sel.r,G.sel.c,u);
-  bar.className="on";
+  const bar=$("selbar"); if(!G) return;
+  const PH=["Draw","Recruitment","Battle","End"];
+  const hints=["","summon, evolve, and activate Skills — click a Unit to reach its Skill",
+               "click a Unit, then a highlighted square to move, attack, or strike the Tower",""];
+  let mid="";
+  const u = G.sel && G.board[G.sel.r][G.sel.c];
+  if(u && u.fd){
+    mid = `<span class="who2">Face-down Unit at ${rcName(G.sel.r,G.sel.c)}</span>
+           <span class="hint">hidden until it is attacked or flipped</span>`;
+  } else if(u){
+    const m=modAt(G.sel.r,G.sel.c,u);
+    mid = `<span class="who2">${esc(u.cards.map(c=>c.name).join(" + "))}</span>
+      <span class="hint">${dieTxt(u)}${m?`&nbsp; ${m>0?"+":""}${m} from auras`:""}${u.tapped?" · tapped":""}${u.sick?" · morph sick":""}${u.skillUsed?" · Skill used":""}</span>` +
+      u.cards.map(c=>`<button class="bigbtn skill" onclick="skillSheet(BY_ID['${c.id}'],{r:${G.sel.r},c:${G.sel.c}})">Skill</button>`).join("");
+  } else {
+    mid = `<span class="hint">${hints[G.phase]||""}</span>`;
+  }
+  const npcWaiting = NPC_ON && G.cur===2;
+  const lbl = G.over ? "Game over" : G.phase===1 ? "To Battle" : "End Turn";
   bar.innerHTML =
-    `<span class="who2">${esc(u.cards.map(c=>c.name).join(" + "))}</span>
-     <span class="tag">${dieTxt(u)}${m?`  ${m>0?"+":""}${m} from auras`:""}
-       ${u.tapped?" · tapped":""}${u.sick?" · morph sick":""}</span>` +
-    u.cards.map(c=>`<button class="bigbtn skill" onclick="skillSheet(BY_ID['${c.id}'],{r:${G.sel.r},c:${G.sel.c}})">Skill: ${esc(c.name.split(",")[0])}</button>`).join("");
+    `<span class="phaseNow">${PH[G.phase]}</span>${mid}<span class="spacer"></span>` +
+    `<button class="bigbtn phase" id="btnPhase" ${G.over||npcWaiting?"disabled":""}>${lbl}</button>`;
+  const b=$("btnPhase");
+  if(b) b.onclick=()=>{ if(G.over||(NPC_ON&&G.cur===2)) return;
+    if(G.phase===1) toBattle(); else if(G.phase===2) endTurn(); render(); };
 }
 
 /* ===================================================================
@@ -1042,8 +1061,14 @@ function fitBoard(){
                $("selbar").offsetHeight + $("hand").offsetHeight + 46;
   const byH = Math.floor((innerHeight - used) / 6) - 3;
   const byW = Math.floor((wrap.clientWidth - 34) / 5) - 3;
-  const u = Math.max(46, Math.min(150, byH, byW));
-  document.documentElement.style.setProperty("--u", u + "px");
+  const uh = Math.max(46, Math.min(132, byH));
+  // Let squares run up to 1.55x wider than tall. Height is the scarce axis
+  // (6 rows vs 5 columns), so this spends the leftover width instead of
+  // leaving big black margins either side of the board.
+  const uw = Math.max(uh, Math.min(byW, Math.round(uh * 1.55), 210));
+  const st = document.documentElement.style;
+  st.setProperty("--uh", uh + "px");
+  st.setProperty("--uw", uw + "px");
 }
 
 function render(){
@@ -1052,8 +1077,6 @@ function render(){
   $("whoTurn").textContent=`P${G.cur} · ${G.P[G.cur].name} · turn ${G.turn}`;
   $("phaseTag").textContent=PH[G.phase];
   $("decks").textContent=`P1 deck ${G.P[1].deck.length} · P2 deck ${G.P[2].deck.length}`;
-  $("btnPhase").textContent=G.phase===1?"To Battle":"End Turn";
-  $("btnPhase").disabled=G.over||(NPC_ON&&G.cur===2);
 
   const acts=G.sel?actionsFrom(G.sel.r,G.sel.c):[];
   const b=$("board"); b.innerHTML="";
