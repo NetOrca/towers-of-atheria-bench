@@ -723,6 +723,43 @@ const MUSIC_SRC={ calm:"music/calm.mp3", battle:"music/battle.mp3" };
 const MUSIC_VOL={ calm:0.30, battle:0.34 };   // company, not a soundtrack
 let MEL={}, MUS_MODE=null, PROC=null;
 
+/* calm loops every 28 s, so a click at the seam would be heard constantly -
+   it is decoded once and looped through Web Audio, which is sample-accurate
+   and truly gapless. battle is 2:41 and 2.5 MB; decoding it would cost ~60 MB
+   of RAM to remove a seam heard once every three minutes, so it streams.
+   Both files were trimmed to zero leading/trailing silence at build time. */
+const GAPLESS={ calm:true, battle:false };
+let BUF={}, NODE=null, MGAIN=null;
+
+function musGain(){
+  const c=ac(); if(!c) return null;
+  if(!MGAIN){ MGAIN=c.createGain(); MGAIN.gain.value=0; MGAIN.connect(c.destination); }
+  return MGAIN;
+}
+function rampGain(to,sec){
+  const c=ac(), g=musGain(); if(!c||!g) return;
+  g.gain.cancelScheduledValues(c.currentTime);
+  g.gain.setValueAtTime(g.gain.value, c.currentTime);
+  g.gain.linearRampToValueAtTime(to, c.currentTime+sec);
+}
+function stopNode(){ if(NODE){ try{ NODE.stop(); }catch(e){} NODE=null; } }
+
+async function playGapless(mode){
+  const c=ac(); if(!c) return false;
+  if(!BUF[mode]){
+    try{
+      const r=await fetch(MUSIC_SRC[mode]); if(!r.ok) return false;
+      BUF[mode]=await c.decodeAudioData(await r.arrayBuffer());
+    }catch(e){ return false; }
+  }
+  if(MUS_MODE!==mode) return true;          // user moved on while it decoded
+  stopNode();
+  const n=c.createBufferSource();
+  n.buffer=BUF[mode]; n.loop=true; n.connect(musGain()); n.start();
+  NODE=n; rampGain(MUSIC_VOL[mode], 0.9);
+  return true;
+}
+
 function musEl(mode){
   if(MEL[mode]) return MEL[mode];
   const a=new Audio();
@@ -740,19 +777,26 @@ function fade(a,to,ms,then){
     if(k>=1){ clearInterval(a._f); a._f=null; if(then) then(); }
   },40);
 }
-function startMusic(mode){
-  if(!MUS_ON || MUS_MODE===mode) return;
-  const prev=MUS_MODE; MUS_MODE=mode;
-  if(prev && MEL[prev]) fade(MEL[prev],0,700,()=>{ try{ MEL[prev].pause(); }catch(e){} });
-  stopProc();
+function playStream(mode){
   const a=musEl(mode);
   if(a.broken){ startProc(mode); return; }
   const pr=a.play();
   if(pr && pr.catch) pr.catch(()=>{});   // autoplay blocked; retried on next gesture
   fade(a, MUSIC_VOL[mode], 900);
 }
+
+function startMusic(mode){
+  if(!MUS_ON || MUS_MODE===mode) return;
+  const prev=MUS_MODE; MUS_MODE=mode;
+  if(prev && MEL[prev]) fade(MEL[prev],0,700,()=>{ try{ MEL[prev].pause(); }catch(e){} });
+  if(prev && GAPLESS[prev]){ rampGain(0,0.6); setTimeout(()=>{ if(MUS_MODE!==prev) stopNode(); },650); }
+  stopProc();
+  if(GAPLESS[mode]) playGapless(mode).then(ok=>{ if(!ok && MUS_MODE===mode) playStream(mode); });
+  else playStream(mode);
+}
 function stopMusic(){
   Object.keys(MEL).forEach(k=>fade(MEL[k],0,400,()=>{ try{ MEL[k].pause(); }catch(e){} }));
+  rampGain(0,0.4); setTimeout(stopNode,450);
   stopProc(); MUS_MODE=null;
 }
 /* Calm covers the menu and the deck builder, battle covers the Battle
@@ -769,8 +813,8 @@ function musicScene(){
 /* First gesture unblocks audio - kick whatever should be playing. */
 addEventListener("pointerdown",function once(){
   removeEventListener("pointerdown",once);
-  ac(); musicScene();
-  if(MUS_MODE && MEL[MUS_MODE]){ const pr=MEL[MUS_MODE].play(); if(pr&&pr.catch) pr.catch(()=>{}); }
+  ac();
+  const m=MUS_MODE; MUS_MODE=null; if(m) startMusic(m); else musicScene();
 });
 
 /* ---- fallback: two loops built from a scale, not a recording ------- */
