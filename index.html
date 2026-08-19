@@ -371,6 +371,76 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
   display:flex;gap:1.4em;justify-content:center;flex-wrap:wrap}
 .gobox .row{display:flex;gap:.7em;justify-content:center;margin-top:1.8em;flex-wrap:wrap}
 
+
+/* ===================================================================
+   LANDSCAPE PHONE
+   Portrait is short on width; landscape is desperately short on HEIGHT
+   (a 896x414 screen has ~414px for six rows of board plus all chrome).
+   So the width-based mobile rules do not apply here - this needs its own
+   breakpoint keyed on height, and every vertical pixel has to be earned.
+   The log becomes a panel that slides in from the right, with its toggle
+   riding the panel's edge so the button is never the thing that gets
+   covered up.
+   =================================================================== */
+#logTab{display:none;position:fixed;z-index:70;right:0;top:50%;
+  transform:translateY(-50%);
+  writing-mode:vertical-rl;text-orientation:mixed;
+  font-family:var(--ui);font-weight:800;letter-spacing:.18em;font-size:.82em;
+  padding:1.1em .45em;border:1px solid var(--edge);border-right:none;
+  border-radius:6px 0 0 6px;background:linear-gradient(#3b3220,#2b2418);
+  color:var(--parch);box-shadow:-3px 0 12px rgba(0,0,0,.5);
+  transition:right .28s cubic-bezier(.4,0,.2,1)}
+#logTab:hover{border-color:var(--gold);color:#fff}
+
+@media (orientation:landscape) and (max-height:600px){
+  :root{--fs:clamp(12px,2.6vh,16px)}
+  .bar{padding:.2em .5em;gap:.4em}
+  .bar .tag{font-size:.72em;letter-spacing:.06em}
+  .tbtn{min-height:34px;padding:.3em .7em;font-size:.86em}
+
+  /* the log stops taking a column and becomes a drawer */
+  #game .body{flex-direction:row}
+  #side2{position:fixed;top:0;right:0;bottom:0;width:min(360px,58vw);
+    max-height:none;border-left:1px solid #000;border-top:none;z-index:65;
+    transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+  #side2.open{transform:translateX(0)}
+  #logTab{display:block}
+  #logTab.open{right:min(360px,58vw)}
+
+  #boardWrap{padding:.25em;gap:.25em}
+  #zones{font-size:.74em;gap:.3em}
+  #zones .zgrp{padding:.15em .35em}
+  .zbtn{min-height:28px;padding:.2em .5em;font-size:.9em}
+
+  /* action bar back to a single row - height is the scarce axis here */
+  #selbar{position:fixed;left:0;right:0;bottom:0;z-index:60;
+    flex-direction:row;align-items:center;flex-wrap:nowrap;gap:.5em;
+    padding:.3em .6em calc(.3em + env(safe-area-inset-bottom,0px));
+    min-height:0;border-radius:0}
+  #selbar .spacer{display:block;flex:1}
+  #selbar .bigbtn.phase{order:0;width:auto;min-height:38px;padding:.35em .9em;font-size:.95em}
+  #selbar .bigbtn.skill{min-height:38px;padding:.35em .8em}
+  #selbar .phaseNow{font-size:.8em}
+  #selbar .hint{font-size:.8em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    max-width:42vw}
+  #selbar .who2{font-size:.9em}
+
+  #hand{min-height:0;padding:.3em;gap:5px}
+  .hcard{width:clamp(104px,15vh,132px)}
+  .hcard .hn{font-size:.9em}
+  .acts button{min-height:32px;padding:.2em .5em;font-size:.8em}
+  #hand .stamps img{width:17px;height:17px}
+
+  /* rolls float over the board, same as portrait */
+  .gutter{position:fixed;top:26%;width:50vw;height:0;overflow:visible;
+    z-index:40;pointer-events:none;align-self:auto}
+  #gutL{left:0} #gutR{right:0}
+  .gutter .roll{left:0;right:0;text-align:center}
+  .gutter .zlab{display:none}
+  .roll .rv{font-size:clamp(30px,9vh,54px)}
+  .roll .rl{font-size:.62em}
+}
+
 /* modal */
 #modal{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:60;padding:4vmin}
 #modal.on{display:grid}
@@ -532,6 +602,7 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
     <div id="side2">
       <div id="log"></div>
     </div>
+    <button id="logTab" title="show or hide the battle log">LOG</button>
   </div>
 </div>
 
@@ -2549,7 +2620,10 @@ function fitBoard(){
   const used = (bar?bar.offsetHeight:0) + $("zones").offsetHeight +
                $("selbar").offsetHeight + $("hand").offsetHeight + 42;
   const byH = Math.floor((innerHeight - used) / 6) - 3;
-  const gut = ($("gutL")?$("gutL").offsetWidth:0) * 2;
+  // in landscape the gutters are fixed overlays and the log is a drawer, so
+  // neither steals width from the board
+  const drawer = getComputedStyle($("side2")).position === "fixed";
+  const gut = drawer ? 0 : ($("gutL")?$("gutL").offsetWidth:0) * 2;
   const byW = Math.floor((wrap.clientWidth - gut - 34) / 5) - 3;
   const uh = Math.max(46, Math.min(132, byH));
   // Let squares run up to 1.55x wider than tall. Height is the scarce axis
@@ -2678,6 +2752,19 @@ function renderLog(){
 }
 
 /* responsive: recompute square size when the window changes */
+
+/* The log drawer. The toggle rides the panel edge, so opening the drawer
+   slides the button across with it rather than hiding it underneath. */
+function toggleLog(){
+  const on = $("side2").classList.toggle("open");
+  $("logTab").classList.toggle("open", on);
+  $("logTab").textContent = on ? "CLOSE" : "LOG";
+  if(on){ const l=$("log"); l.scrollTop=l.scrollHeight; }
+  if(SCREEN==="game") fitBoard();
+}
+$("logTab").onclick=toggleLog;
+window.toggleLog=toggleLog;
+
 addEventListener("resize",()=>{ if(SCREEN==="game"){ fitBoard(); render(); } });
 </script>
 </body>
