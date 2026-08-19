@@ -196,7 +196,7 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .l-d{color:#a2937a}.l-g{color:#8fbe86}.l-r{color:#d2a35c}.l-k{color:#d98476}
 #hand{display:flex;gap:8px;padding:var(--pad);background:var(--panel2);
   border:1px solid var(--edge);border-radius:3px;width:100%;max-width:min(100%,1100px);
-  overflow-x:auto;overflow-y:hidden;flex:0 0 auto;min-height:9.5em;align-items:flex-start}
+  overflow-x:auto;overflow-y:hidden;flex:0 0 auto;min-height:9.5em;align-items:stretch}
 #hand::-webkit-scrollbar{height:7px}
 #hand::-webkit-scrollbar-thumb{background:#4a4030;border-radius:4px}
 .hcard{flex:0 0 auto;width:clamp(150px,17vmin,196px);font-family:var(--ui);background:linear-gradient(160deg,var(--parch),var(--parch2));
@@ -255,8 +255,23 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .unit .spr{position:absolute;right:2px;bottom:2px;width:26px;height:26px;opacity:.95;
   filter:drop-shadow(0 1px 2px #0008);pointer-events:none}
 /* The tier badge owns the top-right corner. Sprites sit clear of it. */
-.hcard .spr{width:30px;height:30px;position:absolute;bottom:4px;right:5px;opacity:.92}
-.tile .spr{width:44px;height:44px;position:absolute;top:34px;right:8px;opacity:.95}
+
+/* the art box floats so text wraps; the old absolute .spr sat on the words */
+.artbox{float:right;width:52px;height:52px;margin:0 0 .35em .5em;
+  background:#efe7d3;border:1px solid #8d7c58;border-radius:2px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:inset 0 0 0 1px #fffefa;overflow:hidden}
+.artbox img{width:40px;height:40px;image-rendering:pixelated}
+.tile .sk::after{content:"";display:block;clear:both}
+/* On a hand card the tier badge owns the top-right corner, so the art floats
+   LEFT and the name and meta wrap down its right-hand side. Floating it right
+   put it straight under the badge - measured 21px of overlap. */
+.hcard .artbox{float:left;width:42px;height:42px;margin:0 .5em .25em 0}
+.hcard .artbox img{width:32px;height:32px}
+.htxt{overflow:hidden}
+.htxt::after{content:"";display:block;clear:both}
+.hcard .hn{display:block;font-weight:700;line-height:1.15}
+.hcard .hm{display:block;font-family:var(--ui);font-size:.82em;color:#6a5c42}
 .sheet .spr{width:96px;height:96px;margin:0 auto}
 .zrow .spr{width:24px;height:24px;flex:0 0 auto}
 
@@ -670,6 +685,11 @@ window.TOA_CATALOG=[{"id":"hnr_aegis_the_unbroken","name":"Aegis the Unbroken","
 const SPR = window.TOA_SPRITES || {};
 const sprImg = (card, cls) => SPR[card.id]
   ? `<img class="spr ${cls||""}" src="${SPR[card.id]}" alt="">` : "";
+/* A framed art box that FLOATS, so the effect text wraps around it instead
+   of running underneath. Same reading order as the printed card: art on the
+   right, rules text filling the space beside and below it. */
+const sprBox = (card) => SPR[card.id]
+  ? `<span class="artbox"><img src="${SPR[card.id]}" alt=""></span>` : "";
 
 /* ===================================================================
    AUDIO  —  synthesised, not sampled
@@ -736,13 +756,26 @@ const MUSIC_SRC={ calm:"music/calm.mp3", battle:"music/battle.mp3" };
 const MUSIC_VOL={ calm:0.30, battle:0.34 };   // company, not a soundtrack
 let MEL={}, MUS_MODE=null, PROC=null;
 
-/* calm loops every 28 s, so a click at the seam would be heard constantly -
-   it is decoded once and looped through Web Audio, which is sample-accurate
-   and truly gapless. battle is 2:41 and 2.5 MB; decoding it would cost ~60 MB
-   of RAM to remove a seam heard once every three minutes, so it streams.
-   Both files were trimmed to zero leading/trailing silence at build time. */
-const GAPLESS={ calm:true, battle:false };
-let BUF={}, NODE=null, MGAIN=null;
+/* Both tracks run through Web Audio, decoded into a buffer and looped by
+   the audio graph. That is sample-accurate, so both loop perfectly.
+
+   It is also the ONLY reliable way to do this. The earlier version streamed
+   the battle track from an <audio> element and it never played: media
+   elements sit behind a SEPARATE autoplay gate from the AudioContext, and
+   toBattle() is often reached from a timer during the opponent's turn
+   rather than straight off a click, so there is no user activation left and
+   play() rejects with NotAllowedError. The AudioContext only has to be
+   resumed once, on the first click, and everything after that is allowed.
+   No media elements anywhere means that whole class of bug cannot return.
+
+   Memory: decoded audio is Float32, so a 2:41 stereo track at 48 kHz would
+   be ~62 MB. Anything over a minute is therefore downmixed to mono at
+   24 kHz on the way in - ~16 MB instead - which is inaudible for background
+   music sitting at a third of full volume and is the difference between
+   comfortable and risky on a phone. */
+const LONG_TRACK_SEC = 60;
+const LOW_RATE       = 24000;
+let BUF={}, LOADING={}, NODE=null, MGAIN=null;
 
 function musGain(){
   const c=ac(); if(!c) return null;
@@ -757,64 +790,102 @@ function rampGain(to,sec){
 }
 function stopNode(){ if(NODE){ try{ NODE.stop(); }catch(e){} NODE=null; } }
 
-async function playGapless(mode){
-  const c=ac(); if(!c) return false;
-  if(!BUF[mode]){
+async function loadTrack(mode){
+  if(BUF[mode]) return BUF[mode];
+  if(LOADING[mode]) return LOADING[mode];
+  LOADING[mode] = (async()=>{
+    const c=ac(); if(!c) return null;
+    let buf;
     try{
-      const r=await fetch(MUSIC_SRC[mode]); if(!r.ok) return false;
-      BUF[mode]=await c.decodeAudioData(await r.arrayBuffer());
-    }catch(e){ return false; }
-  }
-  if(MUS_MODE!==mode) return true;          // user moved on while it decoded
-  stopNode();
-  const n=c.createBufferSource();
-  n.buffer=BUF[mode]; n.loop=true; n.connect(musGain()); n.start();
-  NODE=n; rampGain(MUSIC_VOL[mode], 0.9);
-  return true;
+      const r=await fetch(MUSIC_SRC[mode]); if(!r.ok) return null;
+      buf = await c.decodeAudioData(await r.arrayBuffer());
+    }catch(e){ return null; }
+    if(buf.duration > LONG_TRACK_SEC){
+      try{
+        const off=new OfflineAudioContext(1, Math.ceil(buf.duration*LOW_RATE), LOW_RATE);
+        const src=off.createBufferSource(); src.buffer=buf;
+        src.connect(off.destination); src.start();
+        buf = await off.startRendering();
+      }catch(e){ /* keep the full-fat buffer rather than losing the track */ }
+    }
+    buf = makeLoop(buf, c);
+    BUF[mode]=buf; return buf;
+  })();
+  const out = await LOADING[mode];
+  delete LOADING[mode];
+  return out;
 }
 
-function musEl(mode){
-  if(MEL[mode]) return MEL[mode];
-  const a=new Audio();
-  a.loop=true; a.preload="none"; a.volume=0;
-  a.addEventListener("error",()=>{ a.broken=true; if(MUS_MODE===mode) startProc(mode); });
-  a.src=MUSIC_SRC[mode];
-  MEL[mode]=a; return a;
+/* Neither placeholder track was authored as a loop. Calm swells in over six
+   seconds and battle spends its last twenty fading to nothing, so looped raw
+   both sink to near silence once a cycle - the file contains no digital
+   silence, but the MUSIC does. This finds the stretch that is actually at
+   level, discards the fade in and fade out, then equal-power crossfades the
+   tail over the head so the join cannot be heard. Equal power, not linear,
+   or the crossfade itself dips.
+
+   Measured automatically rather than hardcoded, so a track swapped in later
+   gets the same treatment with no numbers to tune by hand. */
+function makeLoop(buf, ctx){
+  const SR=buf.sampleRate, ch=buf.numberOfChannels, d=buf.getChannelData(0);
+  const win=Math.floor(0.25*SR);
+  const rmsAt=i=>{ let s=0,n=0;
+    for(let k=i;k<Math.min(i+win,d.length);k++){ s+=d[k]*d[k]; n++; }
+    return n?Math.sqrt(s/n):0; };
+  let typ=0;
+  for(let i=Math.floor(d.length*0.3); i<d.length*0.7; i+=win) typ=Math.max(typ,rmsAt(i));
+  if(!typ) return buf;
+  const TH=0.7*typ;
+  let head=0;            while(head<d.length-win && rmsAt(head)<TH) head+=win;
+  let tail=d.length-win; while(tail>head        && rmsAt(tail)<TH) tail-=win;
+  const L=tail-head;
+  if(L < SR*4) return buf;                        // too little left to bother
+  const xf=Math.min(Math.floor(SR*3), Math.floor(L/4));
+  const N=L-xf;
+  let out; try{ out=ctx.createBuffer(ch,N,SR); }catch(e){ return buf; }
+  for(let c=0;c<ch;c++){
+    const src=buf.getChannelData(c), dst=out.getChannelData(c);
+    for(let i=0;i<N;i++) dst[i]=src[head+i];
+    for(let j=0;j<xf;j++){
+      const t=j/xf;
+      dst[j] = src[head+j]*Math.sin(t*Math.PI/2) + src[head+N+j]*Math.cos(t*Math.PI/2);
+    }
+  }
+  return out;
 }
-function fade(a,to,ms,then){
-  if(a._f) clearInterval(a._f);
-  const from=a.volume||0, t0=performance.now();
-  a._f=setInterval(()=>{
-    const k=Math.min(1,(performance.now()-t0)/ms);
-    try{ a.volume=Math.max(0,Math.min(1,from+(to-from)*k)); }catch(e){}
-    if(k>=1){ clearInterval(a._f); a._f=null; if(then) then(); }
-  },40);
-}
-function playStream(mode){
-  const a=musEl(mode);
-  if(a.broken){ startProc(mode); return; }
-  const pr=a.play();
-  if(pr && pr.catch) pr.catch(()=>{});   // autoplay blocked; retried on next gesture
-  fade(a, MUSIC_VOL[mode], 900);
+
+function playBuffer(mode, buf){
+  const c=ac(); if(!c||!buf) return;
+  stopNode();
+  const n=c.createBufferSource();
+  n.buffer=buf; n.loop=true; n.connect(musGain()); n.start();
+  NODE=n; rampGain(MUSIC_VOL[mode], 0.9);
 }
 
 function startMusic(mode){
   if(!MUS_ON || MUS_MODE===mode) return;
-  const prev=MUS_MODE; MUS_MODE=mode;
-  if(prev && MEL[prev]) fade(MEL[prev],0,700,()=>{ try{ MEL[prev].pause(); }catch(e){} });
-  if(prev && GAPLESS[prev]){ rampGain(0,0.6); setTimeout(()=>{ if(MUS_MODE!==prev) stopNode(); },650); }
+  MUS_MODE=mode;
   stopProc();
-  if(GAPLESS[mode]) playGapless(mode).then(ok=>{ if(!ok && MUS_MODE===mode) playStream(mode); });
-  else playStream(mode);
+  if(BUF[mode]){ playBuffer(mode, BUF[mode]); return; }
+  rampGain(0, 0.35);                       // duck the outgoing track while we load
+  loadTrack(mode).then(buf=>{
+    if(MUS_MODE!==mode) return;            // user moved on while it decoded
+    if(buf) playBuffer(mode, buf);
+    else    startProc(mode);               // missing or undecodable - synth fallback
+  });
 }
 function stopMusic(){
-  Object.keys(MEL).forEach(k=>fade(MEL[k],0,400,()=>{ try{ MEL[k].pause(); }catch(e){} }));
   rampGain(0,0.4); setTimeout(stopNode,450);
   stopProc(); MUS_MODE=null;
 }
+/* Decode the battle track quietly in the background as soon as a game opens,
+   so the Battle Phase does not begin with a second of silence while a 2.5 MB
+   file downloads and decodes. */
+function warmBattleTrack(){ if(MUS_ON && !BUF.battle) loadTrack("battle"); }
+
 /* Calm covers the menu and the deck builder, battle covers the Battle
    Phase. startMusic no-ops when the mode has not changed, so this is safe
-   to call from render(). */
+   to call from anywhere. */
 function musicScene(){
   if(!MUS_ON) return;
   if(SCREEN==="game"){
@@ -1147,8 +1218,7 @@ function renderPool(){
     d.innerHTML=`<div class="tr">T${c.tier}</div>
       <div class="nm">${esc(c.name)}</div>
       <div class="mt">${c.dweller} · ${c.attack}${c.movable?"":" · immovable"}</div>
-      <div class="sk">${c.skill?esc(c.skill):"<i>no effect</i>"}</div>
-      ${sprImg(c)}
+      <div class="sk">${sprBox(c)}${c.skill?esc(c.skill):"<i>no effect</i>"}</div>
       ${stampRow(c,false)}
       <div class="rar r-${c.rarity}"></div>
       ${c.status!=="final"?'<div class="warn">'+c.status+'</div>':""}
@@ -1334,7 +1404,7 @@ function newGame(d1,d2,names,npc){
   say("h",`--- P1, turn 1 ---`);
   say("d","the first player skips their first Battle Phase");
   drawPhase();
-  show("game"); fxRest(); render();
+  show("game"); fxRest(); warmBattleTrack(); render();
 }
 function startBattle(){
   const a=STORE.active&&STORE.decks[STORE.active];
@@ -2995,10 +3065,9 @@ function renderHand(){
     d.className="hcard"+(G.mode&&G.mode.card===card?" picked":"");
     d.draggable=true;
     d.innerHTML=`<div class="tr">T${card.tier}</div>
-      <div class="hn">${esc(card.name)}</div>
-      <div class="hm">${card.dweller} · ${card.attack}${card.movable?"":" · immov"}</div>
-      ${stampRow(card,false)}
-      ${sprImg(card)}`;
+      <div class="htxt">${sprBox(card)}<span class="hn">${esc(card.name)}</span>
+        <span class="hm">${card.dweller} · ${card.attack}${card.movable?"":" · immov"}</span></div>
+      ${stampRow(card,false)}`;
     d.title=card.skill||"no effect";
     if(G.phase===1){
       const acts=document.createElement("div"); acts.className="acts";
