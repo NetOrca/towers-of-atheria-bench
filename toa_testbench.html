@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Towers of Atheria — Mechanics Test Bench</title>
+<style>
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:#f4f1e8;color:#2a2118;font:13px/1.45 "Segoe UI",-apple-system,system-ui,sans-serif}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;padding:12px;max-width:1300px;margin:0 auto}
+h1{font:700 19px/1.2 Georgia,serif;margin:0 0 2px}
+.sub{color:#7a6a52;font-size:12px;margin-bottom:9px}
+.panel{background:#fffdf7;border:1px solid #d9cfb6;border-radius:8px;padding:10px}
+.bar{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+button{font:600 12px/1 inherit;padding:6px 10px;border-radius:6px;border:1px solid #b9a883;background:#efe7d3;color:#2a2118;cursor:pointer}
+button:hover:not(:disabled){background:#e3d8bd}
+button:disabled{opacity:.35;cursor:default}
+button.go{background:#4a7c45;border-color:#3a6236;color:#fff}
+button.go:hover:not(:disabled){background:#3f6b3b}
+button.warn{background:#8a3f36;border-color:#6f3129;color:#fff}
+button.sm{padding:4px 7px;font-size:11px}
+.phase{display:flex;gap:4px;margin-bottom:8px}
+.phase span{flex:1;text-align:center;padding:5px 2px;border-radius:5px;background:#e8dfc8;font-size:11px;font-weight:700;color:#8a7a5e}
+.phase span.on{background:#2a2118;color:#f4f1e8}
+table.board{border-collapse:collapse;margin:8px auto}
+td.cell{width:96px;height:100px;border:1px solid #b9a883;vertical-align:top;padding:2px;position:relative;cursor:pointer;background:#e8dcbe}
+td.cell.tower{background:#d3bf92}
+td.cell.barr{background:#e2d4b0}
+td.cell.open{background:#f2ead4}
+td.cell.p2s{filter:hue-rotate(-16deg) saturate(.9)}
+td.cell.sel{outline:3px solid #2f6fb0;outline-offset:-3px}
+td.cell.mv{outline:3px solid #4a7c45;outline-offset:-3px}
+td.cell.rd{outline:3px solid #b08a2f;outline-offset:-3px}
+td.cell.at{outline:3px solid #a33a2c;outline-offset:-3px}
+.zl{position:absolute;top:1px;left:3px;font-size:9px;color:#8f7d59;letter-spacing:.4px}
+.badge{position:absolute;top:1px;right:3px;font-size:9px;font-weight:700;padding:0 3px;border-radius:3px}
+.unit{margin-top:13px;border-radius:4px;padding:3px 4px;font-size:11px;line-height:1.2;border:1px solid #000;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.unit.p1{background:#2f5d8a;color:#fff;border-color:#1d3d5c}
+.unit.p2{background:#8a4a2f;color:#fff;border-color:#5c2f1d}
+.unit.fd{background:repeating-linear-gradient(45deg,#5a5147,#5a5147 5px,#4a423a 5px,#4a423a 10px);color:#e8e0d0}
+.unit.tapped{transform:rotate(90deg) scale(.8)}
+.unit.stk{outline:2px dashed #f0d67a;outline-offset:1px}
+.unit b{display:block;font-size:11px}
+.unit .st{font-size:9px;opacity:.9}
+.hand{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;min-height:70px}
+.card{width:94px;border:1px solid #b9a883;border-radius:5px;padding:5px;background:#fffdf7;cursor:pointer;font-size:11px;line-height:1.25}
+.card:hover{background:#f3ecd9}
+.card.sel{outline:3px solid #2f6fb0;outline-offset:-2px;background:#eaf1f8}
+.card b{display:block;margin-bottom:2px}
+.card .st{color:#7a6a52;font-size:10px}
+.tabs{display:flex;gap:3px;margin-bottom:7px}
+.tabs button{flex:1}
+.tabs button.on{background:#2a2118;color:#f4f1e8;border-color:#2a2118}
+.tab{display:none}.tab.on{display:block}
+#log,#test{height:400px;overflow-y:auto;font:11px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#2a2118;color:#e4dcc8;border-radius:6px;padding:8px;white-space:pre-wrap}
+#log .r{color:#f0d67a}#log .k{color:#e08a7a}#log .g{color:#9ad48f}#log .h{color:#8ab6e0;font-weight:700}#log .d{color:#9a8f7a}
+#test .pass{color:#9ad48f}#test .fail{color:#ff8a7a;font-weight:700}#test .hd{color:#8ab6e0;font-weight:700}
+.stat{display:flex;justify-content:space-between;font-size:12px;padding:2px 0;border-bottom:1px dotted #d9cfb6}
+.stat b{font-variant-numeric:tabular-nums}
+.hint{background:#fff8dd;border:1px solid #e0d090;border-radius:6px;padding:7px;font-size:12px;margin-bottom:7px;min-height:34px}
+.tb{display:inline-block;padding:2px 8px;border-radius:4px;font-weight:700;font-size:11px}
+.t1{background:#2f5d8a;color:#fff}.t2{background:#8a4a2f;color:#fff}
+fieldset{border:1px solid #d9cfb6;border-radius:6px;padding:7px;margin:0 0 7px}
+legend{font-weight:700;font-size:11px;padding:0 4px}
+label{font-size:11px;margin-right:8px;display:inline-block}
+select{font:12px inherit;padding:3px;border:1px solid #b9a883;border-radius:4px;background:#fff}
+.acts{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+/* ---- combat feedback ---- */
+#fx{min-height:96px;border:1px solid #d9cfb6;border-radius:8px;background:#fffdf7;padding:8px;margin-bottom:8px;
+   display:flex;align-items:center;justify-content:center;text-align:center}
+#fx.idle{color:#a89a7c;font-size:12px;font-style:italic}
+.fxrow{display:flex;align-items:center;gap:16px;justify-content:center;flex-wrap:wrap}
+.side{min-width:150px}
+.side .who{font-size:11px;font-weight:700;margin-bottom:3px}
+.dice{display:flex;gap:4px;justify-content:center}
+.die{width:34px;height:34px;border-radius:7px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;font-weight:800;font-size:15px;border:2px solid rgba(0,0,0,.35);
+  box-shadow:0 2px 3px rgba(0,0,0,.25);animation:tumble .45s ease-out}
+.die small{font-size:8px;font-weight:600;opacity:.75;line-height:1}
+.die.p1{background:#3d76ad;color:#fff}
+.die.p2{background:#ad6440;color:#fff}
+@keyframes tumble{0%{transform:rotate(-160deg) scale(.4);opacity:0}60%{transform:rotate(12deg) scale(1.12)}100%{transform:none;opacity:1}}
+.sum{font-size:22px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+.vs{font:800 15px Georgia,serif;color:#8a7a5e}
+.verdict{margin-top:6px;font-weight:800;font-size:13px;padding:4px 10px;border-radius:5px;display:inline-block}
+.v-kill{background:#8a3f36;color:#fff}
+.v-parry{background:#4a7c45;color:#fff}
+.v-both{background:#2a2118;color:#f0d67a}
+.v-tower{background:#7a5ba8;color:#fff}
+.millbar{height:9px;background:#e0d6bd;border-radius:5px;overflow:hidden;margin-top:6px;width:230px}
+.millbar i{display:block;height:100%;background:#8a3f36;animation:drain .5s ease-out}
+@keyframes drain{from{width:100%}to{width:0}}
+.npcline{background:#efe9fa;border:1px solid #c9bce6;border-radius:6px;padding:6px;font-size:11px;margin-bottom:7px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div>
+  <h1>Towers of Atheria — Mechanics Test Bench</h1>
+  <div class="sub">Every base mechanic, no Skills. The log prints my reading of each rule as it fires.</div>
+  <div class="panel">
+    <div class="phase" id="phase"></div>
+    <div id="fx" class="idle">dice and Tower strikes show here</div>
+    <div class="hint" id="hint">…</div>
+    <div class="bar" id="controls"></div>
+    <table class="board"><tbody id="board"></tbody></table>
+    <div style="font-weight:700;font-size:12px" id="handlbl">Hand</div>
+    <div class="hand" id="hand"></div>
+    <div class="acts" id="acts"></div>
+  </div>
+</div>
+
+<div>
+  <div class="panel">
+    <div class="stat"><span>Turn</span><b id="s-turn"></b></div>
+    <div class="stat"><span><span class="tb t1">P1</span> deck = life</span><b id="s-d1"></b></div>
+    <div class="stat"><span><span class="tb t2">P2</span> deck = life</span><b id="s-d2"></b></div>
+    <div class="stat"><span>hand / discard</span><b id="s-hd"></b></div>
+    <div class="stat"><span>Summon used this turn</span><b id="s-sum"></b></div>
+  </div>
+  <div class="panel" style="margin-top:9px">
+    <div class="tabs">
+      <button id="tb-log" class="on" onclick="tab('log')">Rules log</button>
+      <button id="tb-sand" onclick="tab('sand')">Sandbox</button>
+      <button id="tb-test" onclick="tab('test')">Self-test</button>
+    </div>
+    <div id="p-log" class="tab on"><div id="log"></div></div>
+    <div id="p-sand" class="tab">
+      <fieldset><legend>Spawn a Unit — then click a square</legend>
+        <label>Owner <select id="sp-own"><option value="1">P1</option><option value="2">P2</option></select></label>
+        <label>Tier <select id="sp-tier"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+        <label>Type <select id="sp-type"><option>Dungeon</option><option>Honor</option></select></label><br>
+        <label>Attack <select id="sp-atk"><option value="melee">Melee</option><option value="ranged">Ranged</option></select></label>
+        <label>Moves <select id="sp-mv"><option value="1">Movable</option><option value="0">Immovable</option></select></label>
+        <label>Face <select id="sp-fd"><option value="0">Up</option><option value="1">Down</option></select></label>
+        <div style="margin-top:6px" class="bar">
+          <button class="sm go" onclick="armSpawn()">Arm spawn</button>
+          <button class="sm warn" onclick="clearBoard()">Clear board</button>
+          <button class="sm" onclick="freePhase()">Unlock all Units</button>
+        </div>
+      </fieldset>
+      <fieldset><legend>Dice check</legend>
+        <div class="bar"><button class="sm" onclick="diceCheck()">Roll each die 20,000x</button></div>
+      </fieldset>
+      <div style="font-size:11px;color:#7a6a52">Sandbox writes straight to the board so you can set up an
+      exact position and test one interaction, instead of playing ten turns to reach it.</div>
+    </div>
+    <div id="p-test" class="tab">
+      <div class="bar" style="margin-bottom:6px"><button class="go" onclick="runTests()">Run all rule tests</button></div>
+      <div id="test">Press <b>Run all rule tests</b>.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+/* ============================ constants & geometry ============================ */
+const DIE={1:6,2:8,3:12,4:20};
+const NAMES={Dungeon:["Crypt Rat","Bone Picker","Grave Hound","Tomb Shade","Rot Knight","Barrow Wight","Crypt Warden","Ossuary Titan"],
+             Honor:["Squire","Lantern Page","Shield Bearer","Oath Archer","Vow Knight","Dawn Sentinel","Lightbringer","Radiant Paladin"]};
+// Immovable Units get their OWN names, so a name always means one stat line.
+const FIXED={Dungeon:["Bone Palisade","Barrow Gate","Ossuary Wall","Crypt Bulwark"],
+             Honor:["Watch Post","Oath Stone","Bastion Ward","Dawn Rampart"]};
+const DIRS=[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+const ORTH=[[-1,0],[1,0],[0,-1],[0,1]];
+let UID=1;
+
+// rows 0-2 = P2 mat (their back row is 0). rows 3-5 = P1 mat (their back row is 5).
+function zone(r,c){
+  if(r===5) return {own:1,kind:c===2?"tower":"barr"};
+  if(r===4) return {own:1,kind:"barr"};
+  if(r===3) return {own:1,kind:"open"};
+  if(r===2) return {own:2,kind:"open"};
+  if(r===1) return {own:2,kind:"barr"};
+  return {own:2,kind:c===2?"tower":"barr"};
+}
+const inB=(r,c)=>r>=0&&r<6&&c>=0&&c<5;
+const rc=(r,c)=>String.fromCharCode(65+c)+(6-r);
+
+function mk(type,tier,atk,movable=true){
+  if(!movable){
+    const f=FIXED[type];
+    return {uid:UID++,name:f[(tier-1)%f.length],type,tier,atk,movable:false};
+  }
+  const pool=NAMES[type], i=(tier-1)*2+(atk==="ranged"?1:0);
+  return {uid:UID++,name:pool[i%pool.length],type,tier,atk,movable:true};
+}
+function unit(own,cards,o={}){
+  return {own,cards,tapped:!!o.tapped,sick:!!o.sick,fd:!!o.fd,moved:!!o.moved,acted:!!o.acted,
+          setTurn:o.setTurn===undefined?-99:o.setTurn};
+}
+// Yugioh rule: a Unit cannot be Flip Summoned on the turn it was set face down.
+const canFlip=u=>u&&u.fd&&u.setTurn!==G.turn;
+function buildDeck(type){
+  const d=[];
+  const add=(n,t,a,mv)=>{for(let i=0;i<n;i++)d.push(mk(type,t,a,mv));};
+  add(12,1,"melee");add(6,1,"ranged");add(2,1,"melee",false);
+  add(7,2,"melee"); add(4,2,"ranged");
+  add(5,3,"melee"); add(3,3,"ranged");
+  add(3,4,"melee"); add(2,4,"ranged");
+  for(let i=d.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[d[i],d[j]]=[d[j],d[i]];}
+  return d;
+}
+
+/* ============================ state ============================ */
+let G, SPAWN=null;
+function newGame(){
+  G={board:Array.from({length:6},()=>Array(5).fill(null)),
+     P:{1:{deck:buildDeck("Dungeon"),hand:[],disc:[],type:"Dungeon"},
+        2:{deck:buildDeck("Honor"),  hand:[],disc:[],type:"Honor"}},
+     cur:1,phase:0,turn:1,summonUsed:false,sel:null,mode:null,log:[],over:false};
+  for(const p of[1,2])for(let i=0;i<5;i++)G.P[p].hand.push(G.P[p].deck.pop());
+  say("h","=== Towers of Atheria — mechanics bench ===");
+  say("d","P1 Dungeon (blue, bottom) · P2 Honor (orange, top). Deck = life.");
+  say("h","--- P1, turn 1 ---");
+  say("d","first player skips their first Battle Phase");
+  drawPhase();
+}
+const say=(c,t)=>G.log.push([c,t]);
+
+function unitsOf(p){const o=[];for(let r=0;r<6;r++)for(let c=0;c<5;c++){const u=G.board[r][c];if(u&&u.own===p)o.push({r,c,u});}return o;}
+const dieTxt=u=>u.cards.map(c=>"d"+DIE[c.tier]).join("+");
+function rollDetail(u){
+  const dice=u.cards.map(c=>({sides:DIE[c.tier],v:1+(Math.random()*DIE[c.tier]|0)}));
+  return {dice,total:dice.reduce((s,d)=>s+d.v,0)};
+}
+const roll=u=>rollDetail(u).total;
+
+/* ---- visual feedback ---- */
+function diceHTML(res,p){
+  return `<div class="dice">${res.dice.map(d=>
+    `<div class="die p${p}">${d.v}<small>d${d.sides}</small></div>`).join("")}</div>`+
+    (res.dice.length>1?`<div class="sum">${res.total}</div>`:"");
+}
+function showFX(html){
+  const el=$("fx"); if(!el||!("className" in el))return;
+  el.className=""; el.innerHTML=html;
+}
+function fxCombat(atkU,atkRes,defU,defRes,verdict,vclass,note){
+  showFX(`<div><div class="fxrow">
+    <div class="side"><div class="who">${atkU.fd?"face-down":label(atkU)}</div>${diceHTML(atkRes,atkU.own)}</div>
+    <div class="vs">vs</div>
+    <div class="side"><div class="who">${defU.fd?"face-down":label(defU)}</div>${diceHTML(defRes,defU.own)}</div>
+  </div><div class="verdict ${vclass}">${verdict}</div>
+  ${note?`<div style="font-size:11px;color:#7a6a52;margin-top:4px">${note}</div>`:""}</div>`);
+}
+function fxTower(u,res,n,foe,before,after){
+  showFX(`<div><div class="fxrow">
+    <div class="side"><div class="who">${label(u)}</div>${diceHTML(res,u.own)}</div>
+    <div class="vs">→</div>
+    <div class="side"><div class="who">P${foe} TOWER</div>
+      <div class="sum" style="color:#8a3f36">−${n}</div>
+      <div class="millbar"><i></i></div>
+      <div style="font-size:11px;color:#7a6a52;margin-top:3px">deck ${before} → <b>${after}</b></div>
+    </div>
+  </div><div class="verdict v-tower">TOWER STRUCK — ${n} milled</div></div>`);
+}
+const label=u=>u.cards.map(c=>`${c.name} (T${c.tier} ${c.atk})`).join(" + ");
+const isRanged=u=>u.cards.some(c=>c.atk==="ranged");
+const isMelee =u=>u.cards.some(c=>c.atk==="melee");
+const canMove =u=>u.cards.every(c=>c.movable);
+
+/* ============================ phases ============================ */
+function drawPhase(){
+  for(const{u}of unitsOf(G.cur)){
+    if(u.tapped) say("g",`  straighten ${u.fd?"a face-down Unit":label(u)}${u.sick?" — Morph Sickness ends":""}`);
+    u.tapped=false;u.sick=false;u.moved=false;u.acted=false;
+  }
+  const P=G.P[G.cur];
+  if(!P.deck.length){G.over=true;say("k",`P${G.cur} cannot draw. P${G.cur===1?2:1} WINS.`);return;}
+  P.hand.push(P.deck.pop());
+  say("d",`draw — deck ${P.deck.length}`);
+  G.phase=1;
+}
+function toBattle(){
+  G.phase=2;G.mode=null;G.sel=null;
+  if(G.turn===1&&G.cur===1){say("r","Battle Phase SKIPPED — first player cannot attack on turn one.");return endTurn();}
+  say("h","-- Battle Phase --");
+  say("d","per Unit: Move → Ride (optional) → Attack (optional), then it taps");
+}
+function endTurn(){
+  say("d","-- End Phase --");
+  G.cur=G.cur===1?2:1;G.sel=null;G.mode=null;G.summonUsed=false;
+  if(G.cur===1)G.turn++;
+  say("h",`--- P${G.cur}, turn ${G.turn} ---`);
+  G.phase=0;drawPhase();
+  if(NPC&&G.cur===2&&!G.over&&!NPC_BUSY){ npcTurn(); }
+}
+
+/* ============================ recruitment ============================ */
+const tributeCost=t=>t-1;
+const canSummonAt=(r,c,p)=>{const z=zone(r,c);return z.own===p&&z.kind==="barr"&&!G.board[r][c];};
+
+function actNormal(card,fd){
+  if(G.summonUsed)return say("k","you already used your Normal or Tribute Summon this turn");
+  if(card.tier!==1)return say("k","Normal Summon is Tier 1 only");
+  G.mode={t:"place",card,fd,how:"Normal"};
+  say("d",`choose an empty Barracks${fd?" — placing FACE DOWN":""}`);
+}
+function actTribute(card,fd){
+  if(G.summonUsed)return say("k","you already used your Normal or Tribute Summon this turn");
+  if(card.tier<2)return say("k","Tier 1 needs no tribute");
+  const need=tributeCost(card.tier),have=unitsOf(G.cur).length;
+  if(have<need)return say("k",`Tier ${card.tier} costs ${need} Unit(s); you control ${have}`);
+  G.mode={t:"trib",card,fd,need,picked:0};
+  say("d",`select ${need} of your Units to tribute — a Ride stack counts as ONE`);
+}
+function actEvolve(card){
+  if(card.tier<2)return say("k","nothing evolves into a Tier 1");
+  G.mode={t:"evo",card};
+  say("d",`choose a face-up Tier ${card.tier-1} ${card.type} Unit you control`);
+}
+
+/* ============================ legal actions ============================ */
+function actionsFrom(r,c){
+  const u=G.board[r][c];if(!u)return[];
+  const out=[],me=u.own,foe=me===1?2:1;
+
+  if(!u.moved&&canMove(u)){
+    for(const[dr,dc]of ORTH){
+      const nr=r+dr,nc=c+dc;if(!inB(nr,nc))continue;
+      const z=zone(nr,nc);
+      if(z.kind==="tower")continue;                      // NOBODY stands on a Tower — the Deck sits there
+      if(z.own===foe&&z.kind==="barr")continue;          // never enter an enemy Barracks
+      if(!G.board[nr][nc]) out.push({r:nr,c:nc,k:"move"});
+    }
+  }
+  // Ride: any Tier, any Type. Morph Sickness blocks it both ways. Attacking does not.
+  for(const[dr,dc]of ORTH){
+    const nr=r+dr,nc=c+dc;if(!inB(nr,nc))continue;
+    const o=G.board[nr][nc];
+    // Morph Sickness blocks Riding. So does being face down — a stack rolls its
+    // dice in the open, and a hidden die cannot be rolled. Attacking does NOT block it.
+    if(o&&o.own===me&&u.cards.length+o.cards.length<=2&&!u.sick&&!o.sick&&!u.fd&&!o.fd)
+      out.push({r:nr,c:nc,k:"ride"});
+  }
+  if(!u.acted){
+    const reach=[];
+    for(const[dr,dc]of DIRS){
+      const nr=r+dr,nc=c+dc;
+      if(inB(nr,nc)&&isMelee(u)) reach.push({r:nr,c:nc,far:false});
+      if(isRanged(u)){
+        if(inB(nr,nc)) reach.push({r:nr,c:nc,far:false});
+        const fr=r+2*dr,fc=c+2*dc;
+        if(inB(fr,fc)&&inB(nr,nc)&&!G.board[nr][nc]) reach.push({r:fr,c:fc,far:true});
+      }
+    }
+    for(const t of reach){
+      const z=zone(t.r,t.c),o=G.board[t.r][t.c];
+      if(o&&o.own===foe) out.push({r:t.r,c:t.c,k:"attack",far:t.far});
+      else if(!o&&z.own===foe&&z.kind==="barr") out.push({r:t.r,c:t.c,k:"tower",far:t.far});
+    }
+  }
+  const seen=new Set();
+  return out.filter(a=>{const k=`${a.r},${a.c},${a.k}`;if(seen.has(k))return false;seen.add(k);return true;});
+}
+
+/* ============================ resolution ============================ */
+function reveal(u,why){
+  if(!u.fd)return;
+  u.fd=false;
+  say("r",`  FACE-DOWN REVEALED (${why}) → ${label(u)}, rolls ${dieTxt(u)}`);
+}
+function kill(r,c){const u=G.board[r][c];if(!u)return;G.P[u.own].disc.push(...u.cards);G.board[r][c]=null;}
+
+function resolve(s,a){
+  const u=G.board[s.r][s.c],me=u.own,foe=me===1?2:1;
+
+  if(a.k==="move"){
+    G.board[a.r][a.c]=u;G.board[s.r][s.c]=null;u.moved=true;
+    say("d",`move ${u.fd?"face-down Unit":label(u)}  ${rc(s.r,s.c)} → ${rc(a.r,a.c)}`);
+    if(u.fd) say("r","  a face-down Unit always moves exactly 1 square and never rolls a movement die");
+    return;
+  }
+
+  if(a.k==="ride"){
+    const o=G.board[a.r][a.c];
+    o.cards=[...o.cards,...u.cards];G.board[s.r][s.c]=null;
+    o.tapped=false;o.sick=false;o.moved=false;o.acted=false;
+    say("g",`RIDE → ${label(o)} at ${rc(a.r,a.c)}`);
+    say("r",`  stack rolls ${dieTxt(o)} added — for Moving and Fighting only. A Skill would roll only its own Unit's die.`);
+    say("r","  ONE Unit now: one target, one square. Destroy it and BOTH cards are discarded.");
+    say("g","  a new Unit — it has its own move and its own attack, still available this turn");
+    if(isRanged(o)&&isMelee(o)) say("g","  mixed stack: it can strike at Melee range AND at Ranged range");
+    if(!canMove(o)) say("r","  contains an Immovable Unit — the whole stack is Immovable");
+    return;
+  }
+
+  if(a.k==="attack"){
+    const d=G.board[a.r][a.c];
+    say("h",`ATTACK ${u.fd?"a face-down Unit":label(u)} → ${d.fd?"a face-down Unit":label(d)}`);
+    reveal(d,"declared as a target");reveal(u,"attacking");
+    const aRes=rollDetail(u),dRes=rollDetail(d),aR=aRes.total,dR=dRes.total;
+    const atRange=!!a.far, rangedVsMelee=isRanged(u)&&d.cards.every(c=>c.atk==="melee");
+    say("",`  ${dieTxt(u)} = ${aR} [${aRes.dice.map(x=>x.v).join(",")}]   vs   ${dieTxt(d)} = ${dR} [${dRes.dice.map(x=>x.v).join(",")}]`);
+    if(rangedVsMelee&&atRange){
+      say("r","  Ranged attacking Melee AT RANGE: the Melee side parries on a tie or better; the Ranged Unit is never at risk");
+      if(aR>dR){kill(a.r,a.c);say("k","  defender discarded");
+        fxCombat(u,aRes,d,dRes,"DEFENDER DESTROYED","v-kill","ranged struck from beyond reach");}
+      else {say("g","  PARRIED — nobody dies");
+        fxCombat(u,aRes,d,dRes,"PARRIED — nobody dies","v-parry","melee parries on a tie or better at range");}
+    }else{
+      if(atRange) say("d","  (at range, but the defender is not purely Melee — standard roll-off)");
+      if(aR>dR){kill(a.r,a.c);say("k","  defender discarded");
+        fxCombat(u,aRes,d,dRes,"DEFENDER DESTROYED","v-kill");}
+      else if(aR<dR){kill(s.r,s.c);say("k","  ATTACKER discarded");
+        fxCombat(u,aRes,d,dRes,"ATTACKER DESTROYED","v-kill");}
+      else{say("k","  TIE — BOTH Units discarded");
+        fxCombat(u,aRes,d,dRes,"TIE — BOTH DESTROYED","v-both","a tie always discards both");
+        kill(a.r,a.c);kill(s.r,s.c);}
+    }
+    if(G.board[s.r][s.c]){u.acted=true;u.tapped=true;}
+    return;
+  }
+
+  if(a.k==="tower"){
+    reveal(u,"attacking");
+    const res=rollDetail(u),n=res.total,P=G.P[foe];
+    const before=P.deck.length;
+    say("h",`TOWER STRIKE on P${foe}`);
+    say("r",`  ${rc(a.r,a.c)} is an EMPTY enemy Barracks — nothing there to absorb it, so the Tower takes the hit`);
+    say("",`  ${dieTxt(u)} = ${n} [${res.dice.map(x=>x.v).join(",")}] → mill ${n}`);
+    let m=0;for(let i=0;i<n&&P.deck.length;i++){P.disc.push(P.deck.pop());m++;}
+    fxTower(u,res,m,foe,before,P.deck.length);
+    say("k",`  P${foe} deck ${before} → ${P.deck.length}`);
+    if(!P.deck.length){G.over=true;say("k",`P${foe} has nothing left to draw — P${me} WINS on their next Draw Phase.`);}
+    u.acted=true;u.tapped=true;return;
+  }
+}
+
+/* ============================ input ============================ */
+function cellClick(r,c){
+  if(SPAWN){doSpawn(r,c);return render();}
+  if(G.over)return;
+  const m=G.mode,u=G.board[r][c];
+
+  if(m){
+    if(m.t==="place"){
+      if(!canSummonAt(r,c,G.cur)){say("k","must be an EMPTY Barracks you own — never the Tower, never the open row");return render();}
+      const P=G.P[G.cur];P.hand.splice(P.hand.indexOf(m.card),1);
+      G.board[r][c]=unit(G.cur,[m.card],{fd:m.fd,setTurn:G.turn});
+      say("g",`${m.how.toUpperCase()} SUMMON → ${rc(r,c)}${m.fd?" (FACE DOWN)":` — ${m.card.name} T${m.card.tier}`}`);
+      if(m.fd) say("r","  Name, Tier, Type and Attack Type are hidden. It cannot be Flip Summoned until next turn.");
+      say("d","  newly summoned Units are NOT sick — it may act this turn");
+      G.summonUsed=true;G.mode=null;return render();
+    }
+    if(m.t==="trib"){
+      if(!u||u.own!==G.cur){say("k","pick a Unit you control");return render();}
+      if(u.fd) say("r",`  tributing a FACE-DOWN Unit — it goes to the Discard face up: ${label(u)}`);
+      else say("d",`  tribute ${label(u)}${u.cards.length>1?" (a stack — counts as ONE)":""} → discard`);
+      u.fd=false;                       // the Discard pile is public
+      kill(r,c);m.picked++;
+      if(m.picked===m.need){G.mode={t:"place",card:m.card,fd:m.fd,how:"Tribute"};say("d","now choose an empty Barracks");}
+      return render();
+    }
+    if(m.t==="evo"){
+      if(!u||u.own!==G.cur){say("k","pick a Unit you control");return render();}
+      if(u.fd){say("k","flip it face up first — Evolve is always face up");return render();}
+      if(u.cards.length>1){say("k","cannot Evolve a Ride stack");return render();}
+      const top=u.cards[u.cards.length-1];
+      if(top.type!==m.card.type){say("k",`Type mismatch: ${top.type} vs ${m.card.type}`);return render();}
+      if(top.tier!==m.card.tier-1){say("k",`must be EXACTLY one Tier below — needs T${m.card.tier-1}, that is T${top.tier}`);return render();}
+      const P=G.P[G.cur];P.hand.splice(P.hand.indexOf(m.card),1);
+      const old=u.cards.map(c=>c.name).join(", ");
+      P.disc.push(...u.cards);            // the old form TRANSFORMS — it goes to the Discard
+      u.cards=[m.card];
+      u.tapped=true;u.sick=true;
+      say("g",`EVOLVE at ${rc(r,c)} — ${old} → ${label(u)}`);
+      say("r",`  ${old} goes to the DISCARD. The Unit transformed; it did not stack.`);
+      say("r","  rolls only its new die now — an Evolve is one Unit, a Ride is two.");
+      say("r","  tapped = MORPH SICK: cannot Move, Attack, Ride or be Ridden onto this turn. It still defends at full strength.");
+      G.mode=null;return render();
+    }
+  }
+
+  if(G.phase===1&&u&&u.own===G.cur&&u.fd){          // Flip Summon
+    if(!canFlip(u)){say("k","cannot Flip Summon a Unit the turn it was set face down");return render();}
+    u.fd=false;
+    say("g",`FLIP SUMMON at ${rc(r,c)} → ${label(u)}`);
+    say("r","  free — does not use your Normal or Tribute Summon, and you may flip any number per turn");
+    say("d","  its Active Skill is now available, and it acts normally for the rest of the turn");
+    return render();
+  }
+  if(G.phase!==2){
+    if(u) say("d",`${rc(r,c)}: ${u.fd&&u.own!==G.cur?"face-down Unit (hidden)":label(u)}`);
+    return render();
+  }
+  if(G.sel){
+    const s=G.sel,a=actionsFrom(s.r,s.c).find(a=>a.r===r&&a.c===c);
+    if(s.r===r&&s.c===c){G.sel=null;return render();}
+    if(a){resolve(s,a);G.sel=(G.board[s.r][s.c]||G.board[a.r]&&G.board[a.r][a.c])?null:null;return render();}
+    say("k","not a legal action from there");return render();
+  }
+  if(u&&u.own===G.cur){
+    if(u.tapped){say("k",u.sick?"Morph Sick — cannot act this turn":"already acted (tapped)");return render();}
+    G.sel={r,c};
+  }
+  render();
+}
+
+/* ============================ NPC ============================
+   Deliberately simple and greedy: no lookahead, no bluffing, no card counting.
+   It should be beatable by a new player on their second or third game.        */
+let NPC=false, NPC_BUSY=false;
+const npcSay=t=>say("r","NPC: "+t);
+
+function npcRecruit(){
+  const P=G.P[2], mine=unitsOf(2);
+  // 1. tribute for the biggest thing it can actually pay for
+  const byTier=[...P.hand].sort((a,b)=>b.tier-a.tier);
+  for(const cd of byTier){
+    if(cd.tier<2) continue;
+    if(mine.length<tributeCost(cd.tier)) continue;
+    if(mine.length-tributeCost(cd.tier) < 0) continue;
+    // don't strip the board bare unless the payoff is a T3+
+    if(cd.tier===2 && mine.length<2) continue;
+    const fodder=[...mine].sort((a,b)=>a.u.cards.reduce((s,c)=>s+c.tier,0)-b.u.cards.reduce((s,c)=>s+c.tier,0));
+    npcSay(`tributing ${tributeCost(cd.tier)} for a Tier ${cd.tier}`);
+    for(let i=0;i<tributeCost(cd.tier);i++){const f=fodder[i];kill(f.r,f.c);}
+    const spot=npcBarracks();
+    if(spot){P.hand.splice(P.hand.indexOf(cd),1);G.board[spot.r][spot.c]=unit(2,[cd]);
+      say("g",`  → ${cd.name} T${cd.tier} at ${rc(spot.r,spot.c)}`);G.summonUsed=true;return;}
+  }
+  // 2. otherwise a free Tier 1, face down about a third of the time
+  const t1=P.hand.find(c=>c.tier===1);
+  if(t1){
+    const spot=npcBarracks();
+    if(spot){
+      const fd=Math.random()<0.3;
+      P.hand.splice(P.hand.indexOf(t1),1);
+      G.board[spot.r][spot.c]=unit(2,[t1],{fd});
+      npcSay(`Normal Summon${fd?" FACE DOWN":` — ${t1.name}`} at ${rc(spot.r,spot.c)}`);
+      G.summonUsed=true;return;
+    }
+  }
+  npcSay("nothing worth summoning");
+}
+function npcBarracks(){
+  // prefer the forward Barracks row so its army actually advances
+  for(const r of [1,0]) for(const c of [2,1,3,0,4]) if(canSummonAt(r,c,2)) return {r,c};
+  return null;
+}
+function npcBattle(){
+  let guard=0;
+  while(guard++<40){
+    const acted=unitsOf(2).find(({r,c,u})=>{
+      if(u.tapped) return false;
+      const acts=actionsFrom(r,c);
+      const tower=acts.find(a=>a.k==="tower");
+      if(tower){npcSay(`striking your Tower through ${rc(tower.r,tower.c)}`);resolve({r,c},tower);return true;}
+      // attack only when the dice favour it
+      const atk=acts.filter(a=>a.k==="attack").map(a=>{
+        const d=G.board[a.r][a.c];
+        return {a,edge:u.cards.reduce((s,x)=>s+DIE[x.tier],0)-(d.fd?8:d.cards.reduce((s,x)=>s+DIE[x.tier],0))};
+      }).sort((x,y)=>y.edge-x.edge)[0];
+      if(atk&&atk.edge>=0){npcSay(`attacking at ${rc(atk.a.r,atk.a.c)}`);resolve({r,c},atk.a);return true;}
+      // otherwise walk toward your side of the field
+      const mv=acts.filter(a=>a.k==="move").sort((x,y)=>y.r-x.r)[0];
+      if(mv&&mv.r>r){resolve({r,c},mv);return true;}
+      u.tapped=true;return true;
+    });
+    if(!acted) break;
+  }
+  npcSay("done.");
+}
+function npcTurn(){
+  if(G.over)return;
+  NPC_BUSY=true;render();
+  setTimeout(()=>{
+    npcRecruit();render();
+    setTimeout(()=>{
+      toBattle();render();
+      setTimeout(()=>{
+        if(!G.over&&G.phase===2){npcBattle();render();}
+        setTimeout(()=>{
+          if(!G.over&&G.cur===2) endTurn();
+          NPC_BUSY=false;render();
+        },900);
+      },700);
+    },700);
+  },500);
+}
+
+/* ============================ sandbox ============================ */
+const $=id=>document.getElementById(id);
+function armSpawn(){
+  SPAWN={own:+$("sp-own").value,tier:+$("sp-tier").value,type:$("sp-type").value,
+         atk:$("sp-atk").value,mv:$("sp-mv").value==="1",fd:$("sp-fd").value==="1"};
+  say("d","SANDBOX: click a square to place the Unit");render();
+}
+function doSpawn(r,c){
+  const s=SPAWN;SPAWN=null;
+  G.board[r][c]=unit(s.own,[mk(s.type,s.tier,s.atk,s.mv)],{fd:s.fd});
+  say("d",`SANDBOX: placed P${s.own} T${s.tier} ${s.atk}${s.mv?"":" IMMOVABLE"}${s.fd?" face-down":""} at ${rc(r,c)}`);
+}
+function clearBoard(){G.board=Array.from({length:6},()=>Array(5).fill(null));G.sel=null;say("d","SANDBOX: board cleared");render();}
+function freePhase(){for(let r=0;r<6;r++)for(let c=0;c<5;c++){const u=G.board[r][c];if(u){u.tapped=false;u.sick=false;u.moved=false;u.acted=false;}}say("d","SANDBOX: every Unit straightened and reset");render();}
+function diceCheck(){
+  const N=20000;let out="";
+  for(const t of[1,2,3,4]){
+    let s=0,mn=99,mx=0;const seen=new Set();
+    for(let i=0;i<N;i++){const v=1+(Math.random()*DIE[t]|0);s+=v;seen.add(v);mn=Math.min(mn,v);mx=Math.max(mx,v);}
+    const exp=(DIE[t]+1)/2,got=s/N;
+    out+=`T${t} d${DIE[t]}: mean ${got.toFixed(3)} (expected ${exp.toFixed(3)}), range ${mn}-${mx}, ${seen.size}/${DIE[t]} faces seen\n`;
+  }
+  say("d","DICE CHECK\n"+out);render();tab('log');
+}
+function tab(n){
+  for(const k of["log","sand","test"]){
+    $("p-"+k).className="tab"+(k===n?" on":"");
+    $("tb-"+(k==="log"?"log":k)).className=(k===n?"on":"");
+  }
+}
+
+/* ============================ self-test ============================ */
+let TR=[];
+function ok(name,cond,detail){TR.push([cond?"pass":"fail",name,detail||""]);}
+function blank(){G.board=Array.from({length:6},()=>Array(5).fill(null));}
+function put(r,c,own,tier,atk,o={}){const u=unit(own,[mk("Dungeon",tier,atk,o.movable!==false)],o);G.board[r][c]=u;return u;}
+
+function runTests(){
+  TR=[];const savedLog=G.log;G.log=[];
+  const S=(t)=>TR.push(["hd",t,""]);
+
+  S("GEOMETRY & ZONES");
+  ok("P1 back row centre is P1's Tower", zone(5,2).own===1&&zone(5,2).kind==="tower");
+  ok("P2 back row centre is P2's Tower", zone(0,2).own===2&&zone(0,2).kind==="tower");
+  ok("P1 has exactly 9 Barracks", [5,4].flatMap(r=>[0,1,2,3,4].map(c=>zone(r,c))).filter(z=>z.kind==="barr").length===9);
+  ok("10 open squares between the armies", [2,3].flatMap(r=>[0,1,2,3,4].map(c=>zone(r,c))).filter(z=>z.kind==="open").length===10);
+
+  S("SUMMONING");
+  blank();G.cur=1;G.summonUsed=false;
+  ok("can summon into an empty own Barracks", canSummonAt(4,2,1));
+  ok("cannot summon onto own Tower", !canSummonAt(5,2,1));
+  ok("cannot summon into the open row", !canSummonAt(3,2,1));
+  ok("cannot summon into enemy Barracks", !canSummonAt(1,2,1));
+  put(4,2,1,1,"melee");
+  ok("cannot summon onto an occupied square", !canSummonAt(4,2,1));
+  ok("Tribute cost T2=1, T3=2, T4=3", tributeCost(2)===1&&tributeCost(3)===2&&tributeCost(4)===3);
+
+  S("MOVEMENT");
+  blank();const m1=put(3,2,1,1,"melee");
+  let mv=actionsFrom(3,2).filter(a=>a.k==="move").map(a=>rc(a.r,a.c));
+  ok("moves 1 square orthogonally only (4 options mid-board)", mv.length===4, mv.join(" "));
+  ok("no diagonal moves", !actionsFrom(3,2).some(a=>a.k==="move"&&a.r!==3&&a.c!==2));
+  blank();put(2,2,1,1,"melee");
+  mv=actionsFrom(2,2).filter(a=>a.k==="move").map(a=>rc(a.r,a.c));
+  ok("cannot move into an enemy Barracks", !mv.includes(rc(1,2)), "options: "+mv.join(" "));
+  blank();put(3,2,1,1,"melee",{movable:false});
+  ok("an Immovable Unit has no move options", actionsFrom(3,2).filter(a=>a.k==="move").length===0);
+  blank();put(4,1,1,1,"melee");
+  ok("cannot move onto your OWN Tower (the Deck sits there)",
+     !actionsFrom(4,1).some(a=>a.k==="move"&&zone(a.r,a.c).kind==="tower"));
+  blank();put(4,2,1,1,"melee");
+  const mvT=actionsFrom(4,2).filter(a=>a.k==="move").map(a=>rc(a.r,a.c));
+  ok("...checked from the square directly in front of it", !mvT.includes(rc(5,2)), mvT.join(" "));
+  ok("Immovable Units have their own names", mk("Honor",1,"melee",false).name!==mk("Honor",1,"melee",true).name);
+  blank();const m2=put(3,2,1,1,"melee");m2.moved=true;
+  ok("a Unit that already moved cannot move again", actionsFrom(3,2).filter(a=>a.k==="move").length===0);
+
+  S("MELEE vs RANGED REACH");
+  blank();put(3,2,1,1,"melee");put(2,2,2,1,"melee");put(2,1,2,1,"melee");
+  let at=actionsFrom(3,2).filter(a=>a.k==="attack");
+  ok("Melee hits adjacent orthogonally AND diagonally", at.length===2, at.map(a=>rc(a.r,a.c)).join(" "));
+  blank();put(3,2,1,1,"melee");put(1,2,2,1,"melee");
+  ok("Melee cannot reach 2 squares away", actionsFrom(3,2).filter(a=>a.k==="attack").length===0);
+  blank();put(3,2,1,1,"ranged");put(2,2,2,1,"melee");
+  ok("Ranged CAN hit an adjacent enemy", actionsFrom(3,2).some(a=>a.k==="attack"&&a.r===2&&a.c===2));
+  blank();put(4,2,1,1,"ranged");put(2,2,2,1,"melee");
+  ok("Ranged hits 2 away when the gap is empty", actionsFrom(4,2).some(a=>a.k==="attack"&&a.r===2&&a.c===2&&a.far));
+  put(3,2,1,1,"melee");
+  ok("Ranged is blocked when the gap is occupied", !actionsFrom(4,2).some(a=>a.k==="attack"&&a.r===2&&a.c===2));
+
+  S("TOWER — strike an EMPTY enemy Barracks");
+  blank();put(2,2,1,1,"melee");
+  let tw=actionsFrom(2,2).filter(a=>a.k==="tower").map(a=>rc(a.r,a.c));
+  ok("Melee in the enemy open row threatens 3 empty Barracks", tw.length===3, tw.join(" "));
+  put(1,2,2,1,"melee");
+  const tw2=actionsFrom(2,2).filter(a=>a.k==="tower");
+  ok("garrisoning a Barracks removes that Tower route", tw2.length===2);
+  ok("...and it becomes a normal unit fight instead", actionsFrom(2,2).some(a=>a.k==="attack"&&a.r===1&&a.c===2));
+  blank();put(2,2,1,1,"melee");
+  ok("cannot 'tower' through your OWN empty Barracks", !actionsFrom(2,2).some(a=>a.k==="tower"&&zone(a.r,a.c).own===1));
+  blank();put(3,2,1,1,"ranged");
+  ok("Ranged reaches the enemy Barracks row from the open row", actionsFrom(3,2).some(a=>a.k==="tower"&&a.far));
+
+  S("RIDE");
+  blank();const a1=put(3,1,1,1,"melee"),b1=put(3,2,1,4,"melee");
+  ok("any Tier may ride any Tier", actionsFrom(3,1).some(a=>a.k==="ride"&&a.r===3&&a.c===2));
+  b1.cards.push(mk("Dungeon",2,"melee"));
+  ok("cannot ride onto a full stack (cap 2)", !actionsFrom(3,1).some(a=>a.k==="ride"));
+  blank();const c1=put(3,1,1,1,"melee"),c2=put(3,2,1,2,"melee",{sick:true,tapped:true});
+  ok("Morph Sick Unit cannot be ridden onto", !actionsFrom(3,1).some(a=>a.k==="ride"));
+  blank();const d1=put(3,1,1,1,"melee",{sick:true,tapped:true}),d2=put(3,2,1,2,"melee");
+  ok("Morph Sick Unit cannot ride", !actionsFrom(3,1).some(a=>a.k==="ride"));
+  blank();const e1=put(3,1,1,1,"melee",{acted:true,tapped:true}),e2=put(3,2,1,2,"melee");
+  ok("having ATTACKED does not prevent riding", actionsFrom(3,1).some(a=>a.k==="ride"));
+  blank();put(3,1,1,1,"melee",{fd:true});put(3,2,1,2,"melee");
+  ok("a FACE-DOWN Unit cannot Ride", !actionsFrom(3,1).some(a=>a.k==="ride"));
+  blank();put(3,1,1,1,"melee");put(3,2,1,2,"melee",{fd:true});
+  ok("a FACE-DOWN Unit cannot be Ridden onto", !actionsFrom(3,1).some(a=>a.k==="ride"));
+  blank();put(3,1,1,1,"melee");put(3,2,1,2,"melee");
+  resolve({r:3,c:1},{r:3,c:2,k:"ride"});
+  const st=G.board[3][2];
+  ok("stack occupies ONE square, holds 2 cards", !G.board[3][1]&&st.cards.length===2);
+  ok("stack dice add together", dieTxt(st)==="d8+d6"||dieTxt(st)==="d6+d8", dieTxt(st));
+  ok("new stack is untapped with its own move & attack", !st.tapped&&!st.moved&&!st.acted);
+  blank();put(3,1,1,1,"melee");put(3,2,1,2,"melee",{movable:false});
+  G.board[3][2].cards[0].movable=false;
+  resolve({r:3,c:1},{r:3,c:2,k:"ride"});
+  ok("a stack containing an Immovable Unit cannot move", actionsFrom(3,2).filter(a=>a.k==="move").length===0);
+
+  S("EVOLVE — transform, not stack");
+  blank();G.cur=1;G.phase=1;G.P[1].disc=[];
+  const base=put(4,2,1,1,"melee");
+  const oldCard=base.cards[0];
+  const evoCard=mk("Dungeon",2,"melee");G.P[1].hand.push(evoCard);
+  G.mode={t:"evo",card:evoCard};cellClick(4,2);
+  const ev=G.board[4][2];
+  ok("Evolved Unit holds ONE card, not a stack", ev.cards.length===1, ev.cards.length+" card(s)");
+  ok("the old form went to the Discard", G.P[1].disc.includes(oldCard));
+  ok("it rolls only its NEW die", dieTxt(ev)==="d8", dieTxt(ev));
+  ok("Evolving causes Morph Sickness", ev.sick&&ev.tapped);
+  ok("Evolve does NOT use your Normal/Tribute Summon", G.summonUsed===false);
+  blank();const rs=put(3,1,1,1,"melee");put(3,2,1,1,"melee");
+  resolve({r:3,c:1},{r:3,c:2,k:"ride"});
+  ok("a Ride still holds TWO cards and adds dice", G.board[3][2].cards.length===2);
+
+  S("FACE-DOWN");
+  blank();G.cur=1;G.P[1].disc=[];G.summonUsed=false;
+  const fdT=put(4,1,1,3,"melee",{fd:true});
+  const bigC=mk("Dungeon",2,"melee");G.P[1].hand.push(bigC);
+  G.mode={t:"trib",card:bigC,fd:false,need:1,picked:0};cellClick(4,1);
+  ok("a FACE-DOWN Unit can be sacrificed", !G.board[4][1]);
+  ok("...and it is revealed on the way to the Discard",
+     G.P[1].disc.length>0 && !fdT.fd);
+  G.mode=null;G.summonUsed=false;      // tribute leaves a pending "place" mode
+  blank();const f=put(3,2,1,3,"melee",{fd:true});
+  ok("face-down Unit is on the board and occupies its square", !!G.board[3][2]);
+  ok("face-down Unit still moves exactly 1 square", actionsFrom(3,2).filter(a=>a.k==="move").length===4);
+  const g=put(2,2,2,1,"melee");
+  resolve({r:2,c:2},{r:3,c:2,k:"attack"});
+  ok("being declared a target flips it face up", !f.fd||!G.board[3][2]);
+  blank();G.turn=5;G.cur=1;
+  const fd1=put(4,1,1,2,"melee",{fd:true});fd1.setTurn=5;
+  ok("cannot Flip Summon the turn it was set", !canFlip(fd1));
+  fd1.setTurn=4;
+  ok("CAN Flip Summon on a later turn", canFlip(fd1));
+  G.phase=1;cellClick(4,1);
+  ok("Flip Summon turns it face up", !G.board[4][1].fd);
+  ok("Flip Summon does NOT use your summon", G.summonUsed===false);
+
+  S("COMBAT RESOLUTION");
+  blank();const A=put(3,2,1,4,"melee"),B=put(2,2,2,1,"melee");
+  A.forceRoll=true;
+  let both=0,attWin=0,defWin=0;
+  for(let i=0;i<4000;i++){
+    blank();put(3,2,1,1,"melee");put(2,2,2,1,"melee");
+    resolve({r:3,c:2},{r:2,c:2,k:"attack"});
+    const aAlive=!!G.board[3][2],dAlive=!!G.board[2][2];
+    if(!aAlive&&!dAlive)both++;else if(dAlive)defWin++;else attWin++;
+  }
+  const tiePct=both/4000;
+  ok("T1 vs T1 mutual destruction ≈ 17%", Math.abs(tiePct-1/6)<0.03, (tiePct*100).toFixed(1)+"%");
+  blank();put(4,2,1,4,"ranged");put(2,2,2,1,"melee");
+  let survived=0;
+  for(let i=0;i<2000;i++){
+    blank();put(4,2,1,4,"ranged");put(2,2,2,1,"melee");
+    resolve({r:4,c:2},{r:2,c:2,k:"attack",far:true});
+    if(G.board[4][2])survived++;
+  }
+  ok("Ranged attacking Melee at range is NEVER at risk", survived===2000, survived+"/2000 survived");
+
+  S("DICE");
+  for(const t of[1,2,3,4]){
+    let s=0;const N=30000;const seen=new Set();
+    for(let i=0;i<N;i++){const v=1+(Math.random()*DIE[t]|0);s+=v;seen.add(v);}
+    ok(`d${DIE[t]} fair (mean & all faces)`, Math.abs(s/N-(DIE[t]+1)/2)<0.12&&seen.size===DIE[t], `mean ${(s/N).toFixed(3)}`);
+  }
+
+  G.log=savedLog;
+  blank();
+  const pass=TR.filter(t=>t[0]==="pass").length,fail=TR.filter(t=>t[0]==="fail").length;
+  $("test").innerHTML=TR.map(([k,n,d])=>
+      k==="hd"?`\n<span class="hd">── ${n} ──</span>`
+    : `<span class="${k}">${k==="pass"?"PASS":"FAIL"}</span>  ${n}${d?`   <span style="color:#9a8f7a">[${d}]</span>`:""}`
+  ).join("\n")+`\n\n<span class="hd">${pass} passed, ${fail} failed</span>`;
+  tab("test");render();
+}
+
+/* ============================ render ============================ */
+function render(){
+  const PH=["Straighten & Draw","Recruitment","Battle","End"];
+  $("phase").innerHTML=PH.map((p,i)=>`<span class="${i===G.phase?"on":""}">${p}</span>`).join("");
+
+  const acts=(G.phase===2&&G.sel)?actionsFrom(G.sel.r,G.sel.c):[];
+  const b=$("board");b.innerHTML="";
+  for(let r=0;r<6;r++){
+    const tr=document.createElement("tr");
+    for(let c=0;c<5;c++){
+      const z=zone(r,c),td=document.createElement("td");
+      td.className="cell "+(z.kind==="tower"?"tower":z.kind==="barr"?"barr":"open")+(z.own===2?" p2s":"");
+      if(G.sel&&G.sel.r===r&&G.sel.c===c)td.className+=" sel";
+      const a=acts.find(a=>a.r===r&&a.c===c);
+      if(a)td.className+=a.k==="move"?" mv":a.k==="ride"?" rd":" at";
+      const zl=z.kind==="tower"?`P${z.own} TOWER`:z.kind==="barr"?`P${z.own} barr`:"open";
+      td.innerHTML=`<div class="zl">${rc(r,c)} · ${zl}</div>`+
+        (a?`<div class="badge" style="background:${a.k==="move"?"#4a7c45":a.k==="ride"?"#b08a2f":"#a33a2c"};color:#fff">${a.k==="tower"?"TOWER":a.k.toUpperCase()}</div>`:"");
+      const u=G.board[r][c];
+      if(u){
+        const hidden=u.fd&&u.own!==G.cur;
+        const d=document.createElement("div");
+        d.className="unit p"+u.own+(u.fd?" fd":"")+(u.tapped?" tapped":"")+(u.cards.length>1?" stk":"");
+        d.innerHTML=hidden
+          ? `<b>?????</b><div class="st">face-down</div>`
+          : u.cards.map(cd=>`<b>${cd.name}</b>`).join("")+
+            `<div class="st">${u.cards.map(cd=>"T"+cd.tier+(cd.atk==="ranged"?" ⤢":" ⚔")+(cd.movable?"":" ⛓")).join(" + ")} · ${dieTxt(u)}${u.fd?" · FD":""}${u.sick?" · SICK":""}</div>`;
+        td.appendChild(d);
+      }
+      td.onclick=()=>cellClick(r,c);
+      tr.appendChild(td);
+    }
+    b.appendChild(tr);
+  }
+
+  const P=G.P[G.cur];
+  $("handlbl").innerHTML=`<span class="tb t${G.cur}">P${G.cur}</span> hand — ${P.type}`;
+  const h=$("hand");h.innerHTML="";
+  P.hand.forEach(cd=>{
+    const el=document.createElement("div");
+    el.className="card"+(G.mode&&G.mode.card===cd?" sel":"");
+    el.innerHTML=`<b>${cd.name}</b><div class="st">Tier ${cd.tier} · ${cd.atk}${cd.movable?"":" · immovable"}<br>${cd.type} · d${DIE[cd.tier]}</div>`;
+    if(G.phase===1&&!G.over) el.onclick=()=>{G.mode={t:"pick",card:cd};render();};
+    h.appendChild(el);
+  });
+
+  const ac=$("acts");ac.innerHTML="";
+  if(G.mode&&G.mode.t==="pick"){
+    const cd=G.mode.card;
+    const add=(t,fn)=>{const b=document.createElement("button");b.className="sm go";b.textContent=t;b.onclick=()=>{fn();render();};ac.appendChild(b);};
+    if(cd.tier===1){add("Normal Summon (face up)",()=>actNormal(cd,false));add("Normal Summon FACE DOWN",()=>actNormal(cd,true));}
+    if(cd.tier>1){add(`Tribute Summon — sacrifice ${tributeCost(cd.tier)}`,()=>actTribute(cd,false));
+                  add(`Tribute FACE DOWN`,()=>actTribute(cd,true));
+                  add("Evolve onto a Unit",()=>actEvolve(cd));}
+    const x=document.createElement("button");x.className="sm warn";x.textContent="Cancel";x.onclick=()=>{G.mode=null;render();};ac.appendChild(x);
+  }
+
+  const ctr=$("controls");ctr.innerHTML="";
+  const mkb=(t,cls,fn)=>{const b=document.createElement("button");b.textContent=t;if(cls)b.className=cls;
+    b.disabled=NPC_BUSY;b.onclick=()=>{fn();render();};ctr.appendChild(b);};
+  if(!G.over){
+    if(G.phase===1)mkb("Go to Battle Phase →","go",toBattle);
+    if(G.phase===2)mkb("End Turn →","go",endTurn);
+    if(G.mode&&G.mode.t!=="pick")mkb("Cancel","warn",()=>{G.mode=null;say("d","cancelled");});
+  }
+  mkb("New game","",()=>{NPC_BUSY=false;newGame();});
+  const nb=document.createElement("button");
+  nb.textContent=NPC?"P2 = NPC (on)":"P2 = human";
+  nb.className=NPC?"go":"";
+  nb.onclick=()=>{NPC=!NPC;say("d",`P2 is now ${NPC?"an NPC":"a human"}`);
+    if(NPC&&G.cur===2&&!G.over&&!NPC_BUSY)npcTurn();else render();};
+  ctr.appendChild(nb);
+
+  const hint=$("hint");
+  if(NPC_BUSY) hint.innerHTML="<b>NPC is taking its turn…</b> watch the dice panel and the log.";
+  else if(SPAWN) hint.innerHTML="<b>Sandbox armed.</b> Click any square to place the Unit.";
+  else if(G.over) hint.innerHTML="<b>Game over.</b>";
+  else if(G.mode&&G.mode.t==="place") hint.innerHTML="<b>Click an empty Barracks you own.</b> Never the Tower, never the open row.";
+  else if(G.mode&&G.mode.t==="trib") hint.innerHTML=`<b>Click ${G.mode.need-G.mode.picked} more of your Units</b> to tribute.`;
+  else if(G.mode&&G.mode.t==="evo") hint.innerHTML="<b>Click a face-up Unit</b> exactly one Tier below, same Dweller Type.";
+  else if(G.mode&&G.mode.t==="pick") hint.innerHTML="<b>Choose what to do with this card.</b>";
+  else if(G.phase===1) hint.innerHTML="<b>Recruitment.</b> Click a card in hand to summon or evolve. Click one of your own <b>face-down Units to Flip Summon it</b> — free, any number per turn.";
+  else if(G.phase===2) hint.innerHTML=G.sel?"<b>green = move · gold = ride · red = attack or Tower strike</b>":"<b>Battle.</b> Click one of your untapped Units.";
+
+  $("s-turn").textContent=`${G.turn} · P${G.cur}`;
+  $("s-d1").textContent=G.P[1].deck.length;
+  $("s-d2").textContent=G.P[2].deck.length;
+  $("s-hd").textContent=`${P.hand.length} / ${P.disc.length}`;
+  $("s-sum").textContent=G.summonUsed?"yes":"no";
+
+  const lg=$("log");
+  lg.innerHTML=G.log.map(([c,t])=>c?`<span class="${c}">${t}</span>`:t).join("\n");
+  lg.scrollTop=lg.scrollHeight;
+}
+
+newGame();render();
+</script>
+</body>
+</html>

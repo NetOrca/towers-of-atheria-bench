@@ -1,0 +1,42 @@
+name,tier,type,attack,movable,rarity,skill,art,quantity,card_no,set_code,release_code,fx,status
+Flaming Jack Rabbit,1,lava,melee,yes,common,"If this card would be discarded or destroyed, shuffle it into your deck instead.",,1,1,ASH,ASH,recycle_self,final
+Dungeon Door,3,dungeon,melee,no,common,This Unit and adjacent Units you control add +1 to their rolls. Any Dweller Type.,,1,2,ASH,ASH,aura_plus1_any_incl_self,final
+Lavagoyle,3,lava,melee,yes,common,,,1,3,ASH,ASH,vanilla,final
+Hellhound,1,lava,melee,yes,common,(stats not yet assigned),,1,4,ASH,ASH,,stub
+Dungeon Rat,1,dungeon,melee,yes,common,(stats not yet assigned),,1,5,ASH,ASH,,stub
+Rummaging Rodent,1,dungeon,melee,yes,common,(stats not yet assigned),,1,6,ASH,ASH,,stub
+Crypt Bat,1,dungeon,melee,yes,common,(stats not yet assigned),,1,7,ASH,ASH,,stub
+Cinder Bat,1,lava,melee,yes,common,(stats not yet assigned),,1,8,ASH,ASH,,stub
+Disembodied Hand,1,dungeon,melee,yes,common,(stats not yet assigned),,1,9,ASH,ASH,,stub
+Skeleton,1,dungeon,melee,yes,common,(stats not yet assigned),,1,10,ASH,ASH,,stub
+Skeletal Archer,1,dungeon,melee,yes,common,(stats not yet assigned),,1,11,ASH,ASH,,stub
+Graveyard Wraith,1,dungeon,melee,yes,common,(stats not yet assigned),,1,12,ASH,ASH,,stub
+Ash Skink,1,lava,melee,yes,common,(stats not yet assigned),,1,13,ASH,ASH,,stub
+Undead Hound,1,dungeon,melee,yes,common,(stats not yet assigned),,1,14,ASH,ASH,,stub
+Ember Wisp,1,lava,melee,yes,common,(stats not yet assigned),,1,15,ASH,ASH,,stub
+Grave Snare,1,dungeon,melee,yes,common,(stats not yet assigned),,1,16,ASH,ASH,,stub
+Immolation Trap,1,lava,melee,yes,common,(stats not yet assigned),,1,17,ASH,ASH,,stub
+Grave Shifter,1,dungeon,melee,yes,common,(stats not yet assigned),,1,18,ASH,ASH,,stub
+Immovable Bog,1,dungeon,melee,yes,common,(stats not yet assigned),,1,19,ASH,ASH,,stub
+Molten Field,1,lava,melee,yes,common,(stats not yet assigned),,1,20,ASH,ASH,,stub
+Cinder Skeleton,1,lava,melee,yes,common,(stats not yet assigned),,1,21,ASH,ASH,,stub
+Bone Diviner,1,dungeon,melee,yes,common,(stats not yet assigned),,1,22,ASH,ASH,,stub
+Magma Mine,1,lava,melee,yes,common,(stats not yet assigned),,1,23,ASH,ASH,,stub
+Armored Skeleton,2,dungeon,melee,yes,common,(stats not yet assigned),,1,24,ASH,ASH,,stub
+Skeleton Archer,2,dungeon,melee,yes,common,(stats not yet assigned),,1,25,ASH,ASH,,stub
+Skeletal Mage,2,dungeon,melee,yes,common,(stats not yet assigned),,1,26,ASH,ASH,,stub
+Shallow Grave,2,dungeon,melee,yes,common,(stats not yet assigned),,1,27,ASH,ASH,,stub
+Fire Imp,2,lava,melee,yes,common,(stats not yet assigned),,1,28,ASH,ASH,,stub
+Undead Mare,2,dungeon,melee,yes,common,(stats not yet assigned),,1,29,ASH,ASH,,stub
+Ghoul Rider,2,dungeon,melee,yes,common,(stats not yet assigned),,1,30,ASH,ASH,,stub
+Slagborn,2,lava,melee,yes,common,(stats not yet assigned),,1,31,ASH,ASH,,stub
+Goblin Bomb Carrier,2,lava,melee,yes,common,(stats not yet assigned),,1,32,ASH,ASH,,stub
+Flesh Collector,2,dungeon,melee,yes,common,(stats not yet assigned),,1,33,ASH,ASH,,stub
+Gargoyle,3,dungeon,melee,yes,common,(stats not yet assigned),,1,34,ASH,ASH,,stub
+Charnel Warden,3,dungeon,melee,yes,common,(stats not yet assigned),,1,35,ASH,ASH,,stub
+Ashen Lancer,3,lava,melee,yes,common,(stats not yet assigned),,1,36,ASH,ASH,,stub
+Ash Golem,3,lava,melee,yes,common,(stats not yet assigned),,1,37,ASH,ASH,,stub
+Ashlands,3,lava,melee,yes,common,(stats not yet assigned),,1,38,ASH,ASH,,stub
+Lich King,4,dungeon,melee,yes,common,(stats not yet assigned),,1,39,ASH,ASH,,stub
+Death Knight,4,dungeon,melee,yes,common,(stats not yet assigned),,1,40,ASH,ASH,,stub
+Corrupted Paladin,4,dungeon,melee,yes,common,(stats not yet assigned),,1,41,ASH,ASH,,stub

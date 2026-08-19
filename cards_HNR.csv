@@ -1,0 +1,43 @@
+name,tier,type,attack,movable,rarity,skill,art,quantity,card_no,set_code,release_code,fx,status
+Aegis the Unbroken,4,honor,melee,yes,legendary,On Summon by any method: you may banish 5 cards from your hand to return all Units in your Discard pile to your deck. All or nothing.,,1,1,HNR,HNR,aegis_mass_recur,final
+Ironhide Sentinel,4,forest,melee,yes,epic,"While this Unit is on the field, your opponent's Tower cannot be attacked.",,1,2,HNR,HNR,tower_lock,final
+"Alexia, the Silver Sword",4,honor,melee,yes,epic,Multistrike - if this Unit wins a combat roll it may attack a second time this Battle Phase. Optional. Maximum 2 attacks per phase.,,1,3,HNR,HNR,multistrike,final
+Alfred the Noble Knight,3,honor,melee,yes,rare,Adjacent Tier 1 and Tier 2 Units you control add +3 to their rolls. Does not buff this Unit.,,1,4,HNR,HNR,aura_plus3_low_tier,final
+"Garrek, the Steel Wind",3,honor,melee,yes,epic,"When this Unit rolls in combat, an even result destroys the enemy Unit outright regardless of its roll.",,1,5,HNR,HNR,even_kill,final
+Steadfast Warden,3,honor,melee,yes,rare,Once per turn: return 1 Honor Dweller Unit from your Discard pile to your deck.,,1,6,HNR,HNR,recur_honor_to_deck,final
+Elven Outrider,3,forest,ranged,yes,rare,"When this Unit destroys an enemy Unit in combat and its roll was even, your opponent discards 1 random card from their hand.",,1,7,HNR,HNR,even_discard,final
+"Valen, the Bear Brawler",3,forest,melee,yes,epic,Units adjacent to this Unit cannot be selected as an attack target.,,1,8,HNR,HNR,adjacent_untargetable,final
+Vale Huntress,3,forest,ranged,yes,common,,,1,9,HNR,HNR,vanilla,final
+Elvish Sniper,3,forest,ranged,no,rare,"Once per turn: roll this Unit's die. On an odd result, destroy 1 face-up enemy Unit regardless of its roll.",,1,10,HNR,HNR,odd_snipe,final
+Wooden Catapult,2,honor,ranged,no,common,"Once per turn: roll this Unit's die. On 1 to 4, your opponent chooses 1 Unit they control and sends it to the Discard pile.",,1,11,HNR,HNR,catapult_d8_edict,final
+Standard Bearer,2,honor,melee,yes,uncommon,Adjacent Honor Dwellers you control add +2 to their rolls.,,1,12,HNR,HNR,aura_plus2_honor,final
+Honored Drummer,2,honor,melee,yes,common,Adjacent Units that are not Honor Dwellers subtract 1 from their rolls.,,1,13,HNR,HNR,aura_minus1_non_honor,final
+Forest Tiger,2,forest,melee,yes,common,,,1,14,HNR,HNR,vanilla,final
+Great Brown Bear,2,forest,melee,yes,common,,,1,15,HNR,HNR,vanilla,final
+Bog-Dwelling Stalker,2,forest,melee,yes,common,,,1,16,HNR,HNR,vanilla,final
+Elvish Beast Caller,2,forest,melee,yes,rare,"On Summon by any method: search your deck for 1 Tier 1 or Tier 2 Forest Dweller and add it to your hand, then shuffle.",,1,17,HNR,HNR,search_forest_low,final
+Monastery Protector,2,honor,melee,yes,common,When this Unit destroys an enemy Unit in combat: return 1 card of your choice from your Discard pile to your deck.,,1,18,HNR,HNR,on_kill_recur_choice,final
+Monastery Scholar,2,honor,ranged,yes,uncommon,"During your Recruitment Phase: add 1 card from your Discard pile to your deck, then shuffle.",,1,19,HNR,HNR,recruit_recur_any,final
+Silverlight Dancer,2,honor,ranged,yes,rare,During your Recruitment Phase: return 1 banished Unit to your hand.,,1,20,HNR,HNR,unbanish_to_hand,final
+Wolf Pup,1,forest,melee,yes,common,,,1,21,HNR,HNR,vanilla,final
+Makeshift Catapult,1,honor,ranged,no,common,"Once per turn: if your opponent draws a card outside their Draw Phase, they must immediately discard that card.",,1,22,HNR,HNR,punish_extra_draw,final
+Makeshift Wall,1,honor,melee,no,common,"If a Unit you control adjacent to this Unit would be destroyed, destroy this Unit instead.",,1,23,HNR,HNR,redirect_destruction,final
+Makeshift Ballista,1,honor,ranged,no,common,Once per turn: roll this Unit's die. Even - mill the top card of your opponent's deck. Odd - destroy this Unit.,,1,24,HNR,HNR,ballista_gamble,final
+Orion's Blessing,1,honor,ranged,yes,common,Discard this card from your hand: force a reroll of any one dice roll.,,1,25,HNR,HNR,hand_reroll,final
+Makeshift Tower,1,honor,ranged,no,common,,,1,26,HNR,HNR,vanilla,final
+Honored Spearman,1,honor,melee,yes,common,,,1,27,HNR,HNR,vanilla,final
+City Guard,1,honor,melee,yes,common,,,1,28,HNR,HNR,vanilla,final
+Honor Archer,1,honor,ranged,yes,common,,,1,29,HNR,HNR,vanilla,final
+Forest Squirrel,1,forest,melee,yes,common,,,1,30,HNR,HNR,vanilla,final
+Forest Caiman,1,forest,melee,yes,common,,,1,31,HNR,HNR,vanilla,final
+Forest Rabbit,1,forest,melee,yes,common,,,1,32,HNR,HNR,vanilla,final
+Foraging Foxes,1,forest,melee,yes,common,On Summon: draw 1 card.,,1,33,HNR,HNR,on_summon_draw1,final
+Bear Cave,1,forest,melee,no,uncommon,Once per turn during your Recruitment Phase: discard the top card of your deck to Special Summon 1 Bear Token to the square in front of this Unit.,,1,34,HNR,HNR,spawn_bear_token,final
+Forest Maple,1,forest,melee,no,common,Once per turn during your Recruitment Phase: shuffle 1 card from your hand into your deck to Special Summon 1 Squirrel Token.,,1,35,HNR,HNR,spawn_squirrel_token,final
+Charging Buck,1,forest,melee,yes,common,"While this Unit is ridden by an Honor Dweller, it adds +2 to its roll.",,1,36,HNR,HNR,ridden_by_honor_plus2,final
+Doe,1,forest,melee,yes,common,"Once per turn: shuffle 2 cards from your hand into your deck, then draw 2 cards.",,1,37,HNR,HNR,cycle_two,final
+Shepherd,1,forest,melee,yes,common,When this Unit is destroyed in battle: search your Discard pile for a Tier 1 or Tier 2 Forest Dweller and add it to your hand.,,1,38,HNR,HNR,on_death_recur_forest,final
+City Guard Dog,1,honor,melee,yes,common,1 adjacent Unit you control adds +1 to its roll.,,1,39,HNR,HNR,aura_plus1_single,final
+Town Crier,1,honor,ranged,yes,common,"On Summon: if you have no cards in your hand, draw 5 cards.",,1,40,HNR,HNR,empty_hand_draw5,final
+Bear Token,2,forest,melee,yes,common,Token. Not part of your deck. Cannot be Set face-down. Cannot be Tributed. Destroyed permanently when it leaves the field.,,1,41,HNR,HNR,token,final
+Squirrel Token,1,forest,melee,yes,common,Token. Not part of your deck. Cannot be Set face-down. Cannot be Tributed. Destroyed permanently when it leaves the field.,,1,42,HNR,HNR,token,final
