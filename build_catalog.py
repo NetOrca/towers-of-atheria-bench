@@ -110,6 +110,42 @@ ART_NOTES = {
 # ---------------------------------------------------------------- helpers
 CARDS = []
 
+# ---------------------------------------------------------------------------
+# TOKEN WORDING
+# ---------------------------------------------------------------------------
+# Every card that makes a token must state, on the card, BOTH what the token
+# is and which square it lands on. Two reasons:
+#
+#   1. A player holding the card should never have to look anything up. The
+#      token is not in the deck, so its stats are otherwise invisible.
+#   2. It future-proofs the mechanic. Once the landing square is part of the
+#      text rather than baked into the engine, a new summoner can drop tokens
+#      wherever its own text says - beside itself, on both flanks, on the
+#      square where it died - with no new engine code per card.
+TOKEN_STATS = {
+    "Bear Token":            "T2 Forest, melee, d8",
+    "Squirrel Token":        "T1 Forest, melee, d6",
+    "Zombie Token":          "T1 Dungeon, melee, d6",
+    "Wisp Token":            "T1 Lava, ranged, d6",
+    "Skeleton Knight Token": "T2 Dungeon, melee, d8",
+}
+
+# The landing squares the rules currently recognise. Adding one here is all a
+# future card needs.
+WHERE_FRONT   = "to the square directly in front of this Unit"
+WHERE_ADJ     = "to empty squares adjacent to this Unit"
+WHERE_BARRACKS= "to an empty Barracks square you control"
+WHERE_DIED    = "to the square where this Unit was destroyed"
+WHERE_FLANKS  = "to the empty squares immediately left and right of this Unit"
+
+
+def tok(count, name, where):
+    """'1 Bear Token (T2 Forest, melee, d8) to the square directly in front...'"""
+    stats = TOKEN_STATS[name]
+    plural = name + "s" if count != 1 and not name.endswith("s") else name
+    return f"{count} {plural} ({stats}) {where}"
+
+
 def card(name, set_, tier, dweller, rarity, attack, movable, skill, fx, status="final"):
     assert attack in ("melee", "ranged"), (
         f"{name}: attack must be melee or ranged. Every Unit fights back - "
@@ -246,11 +282,11 @@ card("Foraging Foxes", S, 1, "forest", "common", "melee", True,
      "On Summon: draw 1 card.", "on_summon_draw1")
 card("Bear Cave", S, 1, "forest", "uncommon", "melee", False,
      "Once per turn during your Recruitment Phase: discard the top card of your "
-     "deck to Special Summon 1 Bear Token to the square in front of this Unit.",
+     "deck to Special Summon " + tok(1, "Bear Token", WHERE_FRONT) + ".",
      "spawn_bear_token")
 card("Forest Maple", S, 1, "forest", "common", "melee", False,
      "Once per turn during your Recruitment Phase: shuffle 1 card from your hand "
-     "into your deck to Special Summon 1 Squirrel Token.",
+     "into your deck to Special Summon " + tok(1, "Squirrel Token", WHERE_FRONT) + ".",
      "spawn_squirrel_token")
 card("Charging Buck", S, 1, "forest", "common", "melee", True,
      "While this Unit is ridden by an Honor Dweller, it adds +2 to its roll.",
@@ -376,7 +412,7 @@ card("Immovable Bog", S, 1, "dungeon", "common", "melee", False,
      "aura_bog")
 card("Molten Field", S, 1, "lava", "common", "melee", False,
      "Lava Dwellers in the 8 adjacent squares add +1 to their rolls. At the "
-     "start of your Recruitment Phase, Special Summon 1 Wisp Token to your Barracks.",
+     "start of your Recruitment Phase, Special Summon " + tok(1, "Wisp Token", WHERE_BARRACKS) + ".",
      "aura_lava_and_wisp")
 card("Cinder Skeleton", S, 1, "lava", "common", "ranged", True,
      "During your Recruitment Phase: you may attach this card from your hand to "
@@ -402,8 +438,7 @@ card("Skeletal Mage", S, 2, "dungeon", "common", "ranged", True,
      "Once per turn: roll this Unit's die. On a 7 or 8, mill the top 2 cards of "
      "your opponent's deck.", "mage_mill")
 card("Shallow Grave", S, 2, "dungeon", "common", "melee", False,
-     "Mandatory. Every Recruitment Phase: Special Summon 1 Zombie Token to your "
-     "Barracks. This is not optional.", "spawn_zombie_mandatory")
+     "Mandatory. Every Recruitment Phase: Special Summon " + tok(1, "Zombie Token", WHERE_BARRACKS) + ". This is not optional.", "spawn_zombie_mandatory")
 card("Fire Imp", S, 2, "lava", "common", "ranged", True, "", "vanilla")
 card("Undead Mare", S, 2, "dungeon", "common", "melee", True,
      "If a Tier 1 Unit Rides this card, the stack adds +2 to its roll in battle.",
@@ -434,7 +469,7 @@ card("Dungeon Door", S, 2, "dungeon", "uncommon", "melee", False,
 
 card("Charnel Warden", S, 3, "dungeon", "uncommon", "ranged", True,
      "Once per turn during your Recruitment Phase: banish 1 card from your Discard "
-     "pile to Special Summon 1 Zombie Token.", "banish_for_zombie")
+     "pile to Special Summon " + tok(1, "Zombie Token", WHERE_BARRACKS) + ".", "banish_for_zombie")
 card("Ashen Lancer", S, 3, "dungeon", "rare", "melee", True,
      "When this Unit moves during the Battle Phase, every Unit you control adjacent "
      "to it moves the same number of squares in the same direction. This does not "
@@ -484,9 +519,10 @@ card("Bone Harvester", S, 3, "dungeon", "epic", "melee", True,
      "Discard up to 3 cards from your hand: Special Summon that many Tokens.",
      "bone_harvester")
 card("Charnel Sovereign", S, 4, "dungeon", "legendary", "melee", True,
-     "Special Summon up to 4 Skeleton Knight Tokens. Pay the cost in any "
-     "combination of banishing Dungeon Dwellers from your Discard pile, "
-     "discarding from your hand, or milling from your deck.", "charnel_sovereign")
+     "Special Summon up to 4 Skeleton Knight Tokens (T2 Dungeon, melee, d8) "
+     + WHERE_BARRACKS + ". Pay the cost in any combination of banishing Dungeon "
+     "Dwellers from your Discard pile, discarding from your hand, or milling "
+     "from your deck.", "charnel_sovereign")
 
 # ---- SEARCH FAMILY -----------------------------------------------------
 # The TRIGGER moves earlier as rarity climbs - dying, then being summoned,

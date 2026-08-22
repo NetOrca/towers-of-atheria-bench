@@ -32,8 +32,8 @@ Forest Squirrel,1,forest,melee,yes,common,,,1,30,HNR,HNR,vanilla,final
 Forest Caiman,1,forest,melee,yes,common,,,1,31,HNR,HNR,vanilla,final
 Forest Rabbit,1,forest,melee,yes,common,,,1,32,HNR,HNR,vanilla,final
 Foraging Foxes,1,forest,melee,yes,common,On Summon: draw 1 card.,,1,33,HNR,HNR,on_summon_draw1,final
-Bear Cave,1,forest,melee,no,uncommon,Once per turn during your Recruitment Phase: discard the top card of your deck to Special Summon 1 Bear Token to the square in front of this Unit.,,1,34,HNR,HNR,spawn_bear_token,final
-Forest Maple,1,forest,melee,no,common,Once per turn during your Recruitment Phase: shuffle 1 card from your hand into your deck to Special Summon 1 Squirrel Token.,,1,35,HNR,HNR,spawn_squirrel_token,final
+Bear Cave,1,forest,melee,no,uncommon,"Once per turn during your Recruitment Phase: discard the top card of your deck to Special Summon 1 Bear Token (T2 Forest, melee, d8) to the square directly in front of this Unit.",,1,34,HNR,HNR,spawn_bear_token,final
+Forest Maple,1,forest,melee,no,common,"Once per turn during your Recruitment Phase: shuffle 1 card from your hand into your deck to Special Summon 1 Squirrel Token (T1 Forest, melee, d6) to the square directly in front of this Unit.",,1,35,HNR,HNR,spawn_squirrel_token,final
 Charging Buck,1,forest,melee,yes,common,"While this Unit is ridden by an Honor Dweller, it adds +2 to its roll.",,1,36,HNR,HNR,ridden_by_honor_plus2,final
 Doe,1,forest,melee,yes,common,"Once per turn: shuffle 2 cards from your hand into your deck, then draw 2 cards.",,1,37,HNR,HNR,cycle_two,final
 Shepherd,1,forest,melee,yes,common,When this Unit is destroyed in battle: search your Discard pile for a Tier 1 or Tier 2 Forest Dweller and add it to your hand.,,1,38,HNR,HNR,on_death_recur_forest,final
