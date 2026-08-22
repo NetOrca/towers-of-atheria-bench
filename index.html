@@ -189,7 +189,13 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .unit .fxq{position:absolute;top:1px;right:2px;font-size:.8em;color:#8a6a1e}
 
 #side2{width:min(340px,32vw);background:var(--panel);border-left:1px solid #000;
-  display:flex;flex-direction:column;min-height:0}
+  display:flex;flex-direction:column;min-height:0;
+  transition:width .18s ease}
+/* Minimised log. The board is the thing people came to look at, so the log
+   folds away and gives its width back rather than merely hiding. The button
+   stays put so it is obvious how to get it back. */
+#game.logmin #side2{width:0;border-left:none;overflow:hidden}
+#game.logmin #logTab{background:linear-gradient(#4a3d22,#332a19);color:var(--gold)}
 #log{flex:1;overflow-y:auto;padding:var(--pad);font-size:.95em;font-family:var(--ui);line-height:1.5}
 #log div{margin-bottom:.18em}
 .l-h{color:var(--gold);font-weight:700;margin-top:.5em}
@@ -417,6 +423,44 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 }
 @media (prefers-reduced-motion:reduce){ .roll{animation:none;opacity:1} }
 
+/* ---- the strike itself: shown BEFORE the roll resolves ----
+   Melee gets a slash across the target; Ranged gets a crosshair that snaps
+   shut on it. Both land before the red destruction flash, so the eye reads
+   the sequence as strike -> outcome rather than one confused blur. */
+.slash{position:absolute;inset:-4px;pointer-events:none;z-index:6;overflow:hidden}
+.slash::before,.slash::after{content:"";position:absolute;left:-15%;right:-15%;height:5px;
+  top:50%;border-radius:3px;
+  background:linear-gradient(90deg,transparent,#fff 18%,#ffe9b0 50%,#fff 82%,transparent);
+  box-shadow:0 0 10px #fff,0 0 22px #ffcf6a;
+  transform-origin:50% 50%;opacity:0}
+.slash::before{animation:slashA 420ms ease-out forwards}
+.slash::after{animation:slashB 420ms 90ms ease-out forwards}
+@keyframes slashA{
+  0%{opacity:0;transform:rotate(-32deg) scaleX(.1)}
+  25%{opacity:1;transform:rotate(-32deg) scaleX(1.1)}
+  100%{opacity:0;transform:rotate(-32deg) scaleX(1.25)}
+}
+@keyframes slashB{
+  0%{opacity:0;transform:rotate(26deg) scaleX(.1)}
+  25%{opacity:.9;transform:rotate(26deg) scaleX(1.05)}
+  100%{opacity:0;transform:rotate(26deg) scaleX(1.2)}
+}
+
+.crosshair{position:absolute;inset:0;pointer-events:none;z-index:6;
+  display:grid;place-items:center;animation:chFade 620ms ease-out forwards}
+.crosshair i{position:absolute;width:62%;height:62%;border-radius:50%;
+  border:2px solid #9fe4ff;box-shadow:0 0 12px #6fd0ff,inset 0 0 10px #6fd0ff;
+  animation:chSnap 380ms cubic-bezier(.2,.9,.25,1) forwards}
+.crosshair b, .crosshair u{position:absolute;background:#cdefff;
+  box-shadow:0 0 8px #7fd8ff}
+.crosshair b{width:76%;height:2px}
+.crosshair u{height:76%;width:2px}
+@keyframes chSnap{ 0%{transform:scale(2.1);opacity:0} 45%{opacity:1} 100%{transform:scale(1);opacity:1} }
+@keyframes chFade{ 0%{opacity:0} 18%{opacity:1} 74%{opacity:1} 100%{opacity:0} }
+@media (prefers-reduced-motion:reduce){
+  .slash::before,.slash::after,.crosshair,.crosshair i{animation:none;opacity:.85}
+}
+
 /* ---- destruction: shake, red flash, then fade ---- */
 .parried{position:absolute;inset:2px;border-radius:2px;pointer-events:none;
   background:rgba(60,90,140,.5);border:2px solid #8fc4ff;
@@ -486,7 +530,7 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
    riding the panel's edge so the button is never the thing that gets
    covered up.
    =================================================================== */
-#logTab{display:none;position:fixed;z-index:70;right:0;top:50%;
+#logTab{display:block;position:fixed;z-index:70;right:0;top:50%;
   transform:translateY(-50%);
   writing-mode:vertical-rl;text-orientation:mixed;
   font-family:var(--ui);font-weight:800;letter-spacing:.18em;font-size:.82em;
@@ -1573,8 +1617,8 @@ function beginBattle(level){
   NPC_LEVEL=level;
   const a=STORE.decks[STORE.active];
   const prof = NPC_PROFILES[level] || NPC_PROFILES.easy;
-  newGame(a.cards, prof.curated ? craftedDeck() : randomDeck(),
-          [a.name, prof.name], true);
+  // random every time, for every difficulty - a new stranger each match
+  newGame(a.cards, randomDeck(), [a.name, prof.name], true);
 }
 window.beginBattle=beginBattle;
 function startBench(){
@@ -1880,6 +1924,9 @@ function resolve(s,a){
 function finishAttack(s,a,u,d,A,D,am,dm,defWasFaceDown){
   {
     const me=u.own;
+    // show the blow landing before anyone learns the outcome
+    markStrike(a.r, a.c, isRanged(u) ? "shot" : "slash");
+    sfx(isRanged(u) ? "woosh" : "battle");
     if(u.nextRollMod){ say("r",`  ${label(u)} is rolling at ${u.nextRollMod} from a trap`); u.nextRollMod=0; }
     say("",`  ${dieTxt(u)}${fmtMod(am)} = ${A.total}   vs   ${dieTxt(d)}${fmtMod(dm)} = ${D.total}`);
     // colours are decided AFTER the parry rule, not before it
@@ -2045,17 +2092,22 @@ function cellClick(r,c){
    at a d20 Legendary. Now they work out the real probability of winning the
    roll-off and decline bad trades.
 
+   EVERY opponent still drafts a RANDOM deck, on purpose - so each match
+   feels like a different stranger rather than the same tuned list. The
+   difficulty is entirely in how well they PLAY the hand they were dealt.
+   No peeking at your hand, no stacked draws, no extra resources.
+
    minOdds: refuse an attack whose win chance is below this.
    focus:   how strongly they prefer killing something valuable.
-   curated: draft a real deck with a curve instead of 54 random cards.
+   plan:    weigh WHICH card to summon instead of grabbing a random one.
    =================================================================== */
 const NPC_PROFILES={
   easy:   {name:"Wandering Host",   skills:0,    setChance:0,    tributeChance:.35,
-           minOdds:0.00, focus:0.0, curated:false, towerFirst:true},
+           minOdds:0.00, focus:0.0, plan:false, towerFirst:true},
   medium: {name:"Ashbound Warband", skills:0.55, setChance:0.30, tributeChance:.65,
-           minOdds:0.45, focus:0.6, curated:true,  towerFirst:true},
+           minOdds:0.45, focus:0.6, plan:true,  towerFirst:true},
   hard:   {name:"The Crypt Court",  skills:1,    setChance:0.55, tributeChance:.85,
-           minOdds:0.50, focus:1.0, curated:true,  towerFirst:true},
+           minOdds:0.50, focus:1.0, plan:true,  towerFirst:true},
 };
 
 /* Exact odds that the attacker wins the roll-off, given both dice and both
@@ -2094,49 +2146,6 @@ function randomDeck(){
   return ids;
 }
 
-/* A deck with a curve and a theme, instead of 54 cards drawn out of a hat.
-   The old opponents drafted at random, which is most of why they were easy:
-   a random deck has no early plays, no Tier 4 to build toward, and its
-   auras buff Dweller Types it is not running. Tier spread mirrors the
-   quotas a human deck-builder uses. */
-function craftedDeck(){
-  const pool=PLAYABLE.filter(c=>c.status==="final");
-  // commit to two Dweller Types so the auras actually line up
-  const types=[...new Set(pool.map(c=>c.dweller))];
-  const main=types[Math.random()*types.length|0];
-  let second=types[Math.random()*types.length|0];
-  let guard=0;
-  while(second===main && guard++<10) second=types[Math.random()*types.length|0];
-
-  const score=c=>{
-    let v=0;
-    if(c.dweller===main)   v+=10;
-    else if(c.dweller===second) v+=5;
-    else v-=6;                                  // off-theme cards dilute
-    if(c.fx && c.fx!=="vanilla") v+=4;          // prefer cards that DO things
-    if(AURA && AURA[c.fx]) v+=4;
-    if(!c.movable) v-=2;                        // immobile cards clog the board
-    return v + Math.random()*3;                 // keep drafts from being identical
-  };
-  const byTier=t=>pool.filter(c=>c.tier===t).sort((a,b)=>score(b)-score(a));
-  const quota={1:26, 2:14, 3:9, 4:5};           // 54 total
-  const ids=[];
-  for(const t of [1,2,3,4]){
-    const ranked=byTier(t);
-    let i=0;
-    while(ids.filter(x=>BY_ID[x] && BY_ID[x].tier===t).length < quota[t] && ranked.length){
-      const c=ranked[i % ranked.length];
-      if(ids.filter(x=>x===c.id).length<3) ids.push(c.id);
-      i++;
-      if(i>ranked.length*3) break;              // pool too small, take what we have
-    }
-  }
-  while(ids.length<54){
-    const c=pool[Math.random()*pool.length|0];
-    if(ids.filter(x=>x===c.id).length<3) ids.push(c.id);
-  }
-  return ids.slice(0,54);
-}
 
 /* Skills open prompts and wait for a click. The NPC has no hands, so it
    resolves its own prompts - otherwise the game deadlocks mid-turn. */
@@ -2218,16 +2227,43 @@ function npcTurn(){
                      .sort((a,b)=>b.tier-a.tier);
     if(bigs.length&&Math.random()<prof.tributeChance){
       const card=bigs[0],need=tributeCost(card.tier);
-      const fodder=unitsOf(2).sort((a,b)=>a.u.cards[0].tier-b.u.cards[0].tier).slice(0,need);
+      /* Feed the LEAST useful Units to the tribute, not merely the lowest
+         Tier - a Tier 1 aura is worth more than a vanilla Tier 2. */
+      const fodder=unitsOf(2).sort((a,b)=>{
+        const va=threatValue(a.u)+((AURA&&AURA[a.u.cards[0].fx])?20:0);
+        const vb=threatValue(b.u)+((AURA&&AURA[b.u.cards[0].fx])?20:0);
+        return prof.plan ? (va-vb) : (a.u.cards[0].tier-b.u.cards[0].tier);
+      }).slice(0,need);
       fodder.forEach(f=>kill(f.r,f.c,"tributed"));
-      const sp=spots[Math.random()*spots.length|0];
+      const sp = prof.plan ? spots.slice().sort((a,b)=>b.r-a.r)[0]
+                           : spots[Math.random()*spots.length|0];
       P.hand.splice(P.hand.indexOf(card),1);
       G.board[sp.r][sp.c]=unit(2,[card]);
       say("g",`P2 Tribute Summons ${card.name} to ${rcName(sp.r,sp.c)}`);
       onSummon(card,false,sp.r,sp.c);
     } else if(t1.length){
-      const card=t1[Math.random()*t1.length|0];
-      const sp=spots[Math.random()*spots.length|0];
+      /* Which Tier 1 to play, and where. A random pick wastes the good
+         cards in a random deck; this is where a stronger opponent gets its
+         edge, NOT from a better deck list. */
+      let card, sp;
+      if(prof.plan){
+        const rank=c=>{
+          let v=0;
+          if(c.fx && c.fx!=="vanilla") v+=6;      // a body that does something
+          if(AURA && AURA[c.fx]) v+=8;            // auras compound every turn
+          if(!c.movable) v-=4;                    // walls cannot advance
+          if(c.attack==="ranged") v+=3;           // ranged trades safely
+          return v + Math.random();
+        };
+        card=t1.slice().sort((a,b)=>rank(b)-rank(a))[0];
+        /* Immobile cards belong at the back where they hold ground; anything
+           that can walk goes to the front rank so it reaches the fight. */
+        const wantFront = card.movable;
+        sp = spots.slice().sort((a,b)=> wantFront ? (b.r-a.r) : (a.r-b.r))[0];
+      } else {
+        card = t1[Math.random()*t1.length|0];
+        sp   = spots[Math.random()*spots.length|0];
+      }
       P.hand.splice(P.hand.indexOf(card),1);
       // a harder opponent hides things - traps only work face down
       const setIt = Math.random()<prof.setChance;
@@ -2244,7 +2280,7 @@ function npcTurn(){
     if(G.over){ NPC_BUSY=false; return; }
     if(i>=queue.length){ NPC_BUSY=false; endTurn(); render(); return; }
     const q=queue[i++];
-    if(!G.board[q.r][q.c]){ return setTimeout(step,90); }
+    if(!G.board[q.r][q.c]){ return setTimeout(step, 117); }   // 90 +30%
     const acts=actionsFrom(q.r,q.c);
     const me=G.board[q.r][q.c];
     let pick=null;
@@ -2288,9 +2324,9 @@ function npcTurn(){
     // otherwise advance toward the player's side of the board
     if(!pick) pick = acts.filter(a=>a.k==="move").sort((a,b)=>b.r-a.r)[0];
     if(pick){ resolve({r:q.r,c:q.c},pick); npcResolvePrompts(); render(); }
-    setTimeout(step,620);
+    setTimeout(step, 806);   // 620 +30% - slow enough to watch
   };
-  setTimeout(step,420);
+  setTimeout(step, 546);     // 420 +30%
 }
 
 
@@ -2617,7 +2653,21 @@ function flyRoll(player, total, label, cls){
 /* Deaths are recorded, not animated inline, because resolve() is synchronous
    and render() rebuilds the board from scratch. render() draws a transient
    ghost over the now-empty square. */
-function markDeath(r,c,name){ (G.deaths=G.deaths||[]).push({r,c,name,at:Date.now()}); }
+/* The destruction flash is held back ~420ms so the strike lands FIRST.
+   Only the VISUAL is delayed - the game state changes immediately, so
+   nothing downstream can read a stale board. `at` is a future timestamp and
+   the renderer simply ignores the marker until then. */
+const DEATH_DELAY = 420;
+function markDeath(r,c,name){
+  (G.deaths=G.deaths||[]).push({r,c,name,at:Date.now()+DEATH_DELAY});
+  // make sure a frame actually happens once the delay is up
+  setTimeout(()=>{ if(SCREEN==="game") render(); }, DEATH_DELAY+20);
+}
+/* kind: "slash" for melee, "shot" for ranged */
+function markStrike(r,c,kind){
+  (G.strikes=G.strikes||[]).push({r,c,kind,at:Date.now()});
+  if(SCREEN==="game") setTimeout(()=>render(), 0);
+}
 function markParry(r,c){ (G.parries=G.parries||[]).push({r,c,at:Date.now()}); }
 
 /* ---- zone piles ---------------------------------------------------
@@ -3484,7 +3534,8 @@ function fitBoard(){
 
 function render(){
   if(!G) return;
-  if(G.deaths) G.deaths=G.deaths.filter(x=>Date.now()-x.at<1200);
+  if(G.strikes) G.strikes=G.strikes.filter(x=>Date.now()-x.at<800);
+  if(G.deaths) G.deaths=G.deaths.filter(x=>Date.now()-x.at<1200);   // x.at is already delayed
   if(G.parries) G.parries=G.parries.filter(x=>Date.now()-x.at<1400);
   const PH=["Draw","Recruitment","Battle","End"];
   $("whoTurn").textContent=`P${G.cur} · ${G.P[G.cur].name} · turn ${G.turn}`;
@@ -3521,13 +3572,27 @@ function render(){
       un.title = u.fd?"face-down Unit":u.cards.map(x=>x.name+" — "+(x.skill||"no effect")).join("\n");
       d.appendChild(un);
     }
+    if(G.strikes&&G.strikes.length){
+      const st=G.strikes.find(x=>x.r===r&&x.c===c&&Date.now()-x.at<700);
+      if(st){
+        const g=document.createElement("div");
+        if(st.kind==="shot"){
+          g.className="crosshair";
+          g.innerHTML='<i></i><b></b><u></u>';
+        } else {
+          g.className="slash";
+        }
+        d.appendChild(g);
+      }
+    }
     if(G.parries&&G.parries.length){
       const pp=G.parries.find(x=>x.r===r&&x.c===c&&Date.now()-x.at<1100);
       if(pp){ const g=document.createElement("div"); g.className="parried";
               g.textContent="PARRIED"; d.appendChild(g); }
     }
     if(G.deaths&&G.deaths.length){
-      const dd=G.deaths.find(x=>x.r===r&&x.c===c&&Date.now()-x.at<900);
+      const now=Date.now();
+      const dd=G.deaths.find(x=>x.r===r&&x.c===c&&now>=x.at&&now-x.at<900);
       if(dd){ const g=document.createElement("div"); g.className="death";
               g.textContent="DESTROYED"; d.appendChild(g); }
     }
@@ -3703,12 +3768,30 @@ function renderLog(){
 /* The log drawer. The toggle rides the panel edge, so opening the drawer
    slides the button across with it rather than hiding it underneath. */
 function toggleLog(){
-  const on = $("side2").classList.toggle("open");
-  $("logTab").classList.toggle("open", on);
-  $("logTab").textContent = on ? "CLOSE" : "LOG";
-  if(on){ const l=$("log"); l.scrollTop=l.scrollHeight; }
-  if(SCREEN==="game") fitBoard();
+  const drawer = getComputedStyle($("side2")).position === "fixed";
+  if(drawer){
+    // narrow screens: the log slides in over the board
+    const on = $("side2").classList.toggle("open");
+    $("logTab").classList.toggle("open", on);
+    $("logTab").textContent = on ? "CLOSE" : "LOG";
+    if(on){ const l=$("log"); l.scrollTop=l.scrollHeight; }
+  } else {
+    // wide screens: the log folds away and hands its width to the board
+    const min = $("game").classList.toggle("logmin");
+    $("logTab").textContent = min ? "SHOW LOG" : "HIDE LOG";
+    savePref("toa_logmin", min);
+    if(!min){ const l=$("log"); l.scrollTop=l.scrollHeight; }
+  }
+  if(SCREEN==="game"){ fitBoard(); fitHand(); }
 }
+/* remember the choice - someone who plays with the log folded away should
+   not have to fold it away again every match */
+try{
+  if(localStorage.getItem("toa_logmin")==="true"){
+    $("game").classList.add("logmin");
+    $("logTab").textContent = "SHOW LOG";
+  }
+}catch(e){}
 $("logTab").onclick=toggleLog;
 window.toggleLog=toggleLog;
 
