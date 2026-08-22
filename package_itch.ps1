@@ -18,7 +18,7 @@
 
 $ErrorActionPreference = "Stop"
 $bench = "D:\GameDevelopment\_TowersOfAtheria\bench"
-$zip   = "D:\GameDevelopment\_TowersOfAtheria\TowersOfAtheria_bench_v0.02.zip"
+$zip   = "D:\GameDevelopment\_TowersOfAtheria\TowersOfAtheria_bench_v0.03.zip"
 
 if (-not (Test-Path "$bench\index.html")) { throw "index.html not found in $bench" }
 
