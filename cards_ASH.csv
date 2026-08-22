@@ -16,14 +16,14 @@ Grave Snare,1,dungeon,melee,yes,common,"When this Unit is attacked while face do
 Immolation Trap,1,lava,melee,yes,common,"When this Unit is attacked while face down: after the battle resolves, destroy both this Unit and the attacking Unit.",,1,15,ASH,ASH,trap_mutual_destruct,final
 Grave Shifter,1,dungeon,melee,yes,uncommon,"Swap places with any Unit on the board, yours or your opponent's.",,1,16,ASH,ASH,swap_any,final
 Immovable Bog,1,dungeon,melee,no,common,Dungeon and Forest Dwellers in the 8 adjacent squares add +1 to their rolls. All other Dweller Types in those squares subtract 3.,,1,17,ASH,ASH,aura_bog,final
-Molten Field,1,lava,melee,no,common,"Lava Dwellers in the 8 adjacent squares add +1 to their rolls. At the start of your Recruitment Phase, Special Summon 1 Wisp Token (T1 Lava, ranged, d6) to an empty Barracks square you control.",,1,18,ASH,ASH,aura_lava_and_wisp,final
+Molten Field,1,lava,melee,no,common,"Lava Dwellers in the 8 adjacent squares add +1 to their rolls. At the start of your Recruitment Phase, Special Summon 1 Wisp Token (T1 Lava, ranged, movable, d6) to an empty Barracks square you control.",,1,18,ASH,ASH,aura_lava_and_wisp,final
 Cinder Skeleton,1,lava,ranged,yes,common,During your Recruitment Phase: you may attach this card from your hand to an adjacent Lava Dweller you control as a Ride. This does not use your Normal Summon.,,1,19,ASH,ASH,ride_from_hand_lava,final
 Bone Diviner,1,dungeon,ranged,yes,uncommon,"Discard this card from your hand, then roll a d6. On 1 to 4, every Unit your opponent controls of the corresponding Tier subtracts 2 from its rolls until the end of their next turn. On 5 or 6, nothing happens.",,1,20,ASH,ASH,bone_diviner,final
 Magma Mine,1,lava,ranged,yes,uncommon,"Discard this card from your hand, then roll a d6. On 1 to 4, destroy 1 Unit your opponent controls of the corresponding Tier. On 5 or 6, nothing happens.",,1,21,ASH,ASH,magma_mine,final
 Armored Skeleton,2,dungeon,melee,yes,common,,,1,22,ASH,ASH,vanilla,final
 Skeleton Archer,2,dungeon,ranged,yes,common,,,1,23,ASH,ASH,vanilla,final
 Skeletal Mage,2,dungeon,ranged,yes,common,"Once per turn: roll this Unit's die. On a 7 or 8, mill the top 2 cards of your opponent's deck.",,1,24,ASH,ASH,mage_mill,final
-Shallow Grave,2,dungeon,melee,no,common,"Mandatory. Every Recruitment Phase: Special Summon 1 Zombie Token (T1 Dungeon, melee, d6) to an empty Barracks square you control. This is not optional.",,1,25,ASH,ASH,spawn_zombie_mandatory,final
+Shallow Grave,2,dungeon,melee,no,common,"Mandatory. Every Recruitment Phase: Special Summon 1 Zombie Token (T1 Dungeon, melee, movable, d6) to an empty Barracks square you control. This is not optional.",,1,25,ASH,ASH,spawn_zombie_mandatory,final
 Fire Imp,2,lava,ranged,yes,common,,,1,26,ASH,ASH,vanilla,final
 Undead Mare,2,dungeon,melee,yes,common,"If a Tier 1 Unit Rides this card, the stack adds +2 to its roll in battle.",,1,27,ASH,ASH,ridden_by_t1_plus2,final
 Ghoul Rider,2,dungeon,melee,yes,common,Sacrifice a Ride stack you control: Special Summon a Unit one Tier higher than the stack's highest Tier from your hand.,,1,28,ASH,ASH,ascend_hand,final
@@ -32,7 +32,7 @@ Goblin Bomb Carrier,2,lava,melee,yes,uncommon,When this Unit is destroyed by an 
 Flesh Collector,2,dungeon,melee,yes,epic,"Cleave - when this Unit wins a combat roll, also destroy 1 enemy Unit orthogonally adjacent to the Unit it defeated.",,1,31,ASH,ASH,cleave,final
 Gargoyle,3,dungeon,melee,yes,uncommon,,,1,32,ASH,ASH,vanilla,final
 Dungeon Door,2,dungeon,melee,no,uncommon,"This Unit and adjacent Units you control add +1 to their rolls, regardless of Dweller Type.",,1,33,ASH,ASH,aura_plus1_any_incl_self,final
-Charnel Warden,3,dungeon,ranged,yes,uncommon,"Once per turn during your Recruitment Phase: banish 1 card from your Discard pile to Special Summon 1 Zombie Token (T1 Dungeon, melee, d6) to an empty Barracks square you control.",,1,34,ASH,ASH,banish_for_zombie,final
+Charnel Warden,3,dungeon,ranged,yes,uncommon,"Once per turn during your Recruitment Phase: banish 1 card from your Discard pile to Special Summon 1 Zombie Token (T1 Dungeon, melee, movable, d6) to an empty Barracks square you control.",,1,34,ASH,ASH,banish_for_zombie,final
 Ashen Lancer,3,dungeon,melee,yes,rare,"When this Unit moves during the Battle Phase, every Unit you control adjacent to it moves the same number of squares in the same direction. This does not use those Units' own movement.",,1,35,ASH,ASH,formation_move,final
 Ash Golem,3,lava,melee,yes,rare,This Unit adds +1 to its roll for each Wisp Token adjacent to it.,,1,36,ASH,ASH,wisp_scaling,final
 Ashlands,3,lava,melee,no,rare,Dungeon and Lava Dwellers in the 8 adjacent squares add +2 to their rolls. No penalty to anything else.,,1,37,ASH,ASH,aura_plus2_dungeon_lava,final
@@ -43,9 +43,9 @@ Corrupted Paladin,4,dungeon,melee,yes,epic,"Once per turn: roll this Unit's die.
 Zombie Token,1,dungeon,melee,yes,common,Token. Not part of your deck. Cannot be Set face-down. Cannot be Tributed.,,1,42,ASH,ASH,token,final
 Wisp Token,1,lava,ranged,yes,common,Token. Not part of your deck. Cannot be Set face-down. Cannot be Tributed.,,1,43,ASH,ASH,token,final
 Skeleton Knight Token,2,dungeon,melee,yes,common,Token. Not part of your deck. Cannot be Set face-down. Cannot be Tributed.,,1,44,ASH,ASH,token,final
-Charnel Reaper,3,dungeon,ranged,yes,rare,Banish 2 cards from your Discard pile: Special Summon 2 Tokens adjacent to this Unit.,,1,45,ASH,ASH,charnel_reaper,final
-Bone Harvester,3,dungeon,melee,yes,epic,Discard up to 3 cards from your hand: Special Summon that many Tokens.,,1,46,ASH,ASH,bone_harvester,final
-Charnel Sovereign,4,dungeon,melee,yes,legendary,"Special Summon up to 4 Skeleton Knight Tokens (T2 Dungeon, melee, d8) to an empty Barracks square you control. Pay the cost in any combination of banishing Dungeon Dwellers from your Discard pile, discarding from your hand, or milling from your deck.",,1,47,ASH,ASH,charnel_sovereign,final
+Charnel Reaper,3,dungeon,ranged,yes,rare,"Banish 2 cards from your Discard pile: Special Summon 2 Zombie Tokens (T1 Dungeon, melee, movable, d6) to empty squares adjacent to this Unit.",,1,45,ASH,ASH,charnel_reaper,final
+Bone Harvester,3,dungeon,melee,yes,epic,"Discard up to 3 cards from your hand: Special Summon that many Zombie Tokens (T1 Dungeon, melee, movable, d6) to an empty Barracks square you control.",,1,46,ASH,ASH,bone_harvester,final
+Charnel Sovereign,4,dungeon,melee,yes,legendary,"Special Summon up to 4 Skeleton Knight Tokens (T2 Dungeon, melee, movable, d8) to an empty Barracks square you control. Pay the cost in any combination of banishing Dungeon Dwellers from your Discard pile, discarding from your hand, or milling from your deck.",,1,47,ASH,ASH,charnel_sovereign,final
 Grave Tracker,1,dungeon,ranged,yes,uncommon,On Normal Summon: search your deck for 1 Tier 1 to Tier 3 Dungeon Dweller and add it to your hand.,,1,48,ASH,ASH,search_summon_dungeon,final
 Cinder Stalker,1,lava,melee,yes,uncommon,On Normal Summon: search your deck for 1 Tier 1 to Tier 3 Lava Dweller and add it to your hand.,,1,49,ASH,ASH,search_summon_lava,final
 Sepulcher Hunter,1,dungeon,melee,yes,epic,While this card is in your Discard pile you may banish it: search your deck for 1 Tier 1 to Tier 4 Dungeon Dweller and add it to your hand.,,1,50,ASH,ASH,search_banish_dungeon,final

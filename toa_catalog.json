@@ -470,7 +470,7 @@
   "rarity": "uncommon",
   "attack": "melee",
   "movable": false,
-  "skill": "Once per turn during your Recruitment Phase: discard the top card of your deck to Special Summon 1 Bear Token (T2 Forest, melee, d8) to the square directly in front of this Unit.",
+  "skill": "Once per turn during your Recruitment Phase: discard the top card of your deck to Special Summon 1 Bear Token (T2 Forest, melee, movable, d8) to the square directly in front of this Unit.",
   "fx": "spawn_bear_token",
   "status": "final",
   "art_note": "Simple cave-mouth structure."
@@ -484,7 +484,7 @@
   "rarity": "common",
   "attack": "melee",
   "movable": false,
-  "skill": "Once per turn during your Recruitment Phase: shuffle 1 card from your hand into your deck to Special Summon 1 Squirrel Token (T1 Forest, melee, d6) to the square directly in front of this Unit.",
+  "skill": "Once per turn during your Recruitment Phase: shuffle 1 card from your hand into your deck to Special Summon 1 Squirrel Token (T1 Forest, melee, movable, d6) to the square directly in front of this Unit.",
   "fx": "spawn_squirrel_token",
   "status": "final",
   "art_note": "Simple tree, squirrel peeking from a knot in the trunk."
@@ -834,7 +834,7 @@
   "rarity": "common",
   "attack": "melee",
   "movable": false,
-  "skill": "Lava Dwellers in the 8 adjacent squares add +1 to their rolls. At the start of your Recruitment Phase, Special Summon 1 Wisp Token (T1 Lava, ranged, d6) to an empty Barracks square you control.",
+  "skill": "Lava Dwellers in the 8 adjacent squares add +1 to their rolls. At the start of your Recruitment Phase, Special Summon 1 Wisp Token (T1 Lava, ranged, movable, d6) to an empty Barracks square you control.",
   "fx": "aura_lava_and_wisp",
   "status": "final",
   "art_note": "Field of molten terrain. Lava counterpart to Immovable Bog."
@@ -932,7 +932,7 @@
   "rarity": "common",
   "attack": "melee",
   "movable": false,
-  "skill": "Mandatory. Every Recruitment Phase: Special Summon 1 Zombie Token (T1 Dungeon, melee, d6) to an empty Barracks square you control. This is not optional.",
+  "skill": "Mandatory. Every Recruitment Phase: Special Summon 1 Zombie Token (T1 Dungeon, melee, movable, d6) to an empty Barracks square you control. This is not optional.",
   "fx": "spawn_zombie_mandatory",
   "status": "final",
   "art_note": "A cracked headstone with a hand already clawing up through the dirt beside it."
@@ -1058,7 +1058,7 @@
   "rarity": "uncommon",
   "attack": "ranged",
   "movable": true,
-  "skill": "Once per turn during your Recruitment Phase: banish 1 card from your Discard pile to Special Summon 1 Zombie Token (T1 Dungeon, melee, d6) to an empty Barracks square you control.",
+  "skill": "Once per turn during your Recruitment Phase: banish 1 card from your Discard pile to Special Summon 1 Zombie Token (T1 Dungeon, melee, movable, d6) to an empty Barracks square you control.",
   "fx": "banish_for_zombie",
   "status": "final",
   "art_note": "Necromancer figure - an enchanted summon built to protect an area."
@@ -1212,7 +1212,7 @@
   "rarity": "rare",
   "attack": "ranged",
   "movable": true,
-  "skill": "Banish 2 cards from your Discard pile: Special Summon 2 Tokens adjacent to this Unit.",
+  "skill": "Banish 2 cards from your Discard pile: Special Summon 2 Zombie Tokens (T1 Dungeon, melee, movable, d6) to empty squares adjacent to this Unit.",
   "fx": "charnel_reaper",
   "status": "final",
   "art_note": ""
@@ -1226,7 +1226,7 @@
   "rarity": "epic",
   "attack": "melee",
   "movable": true,
-  "skill": "Discard up to 3 cards from your hand: Special Summon that many Tokens.",
+  "skill": "Discard up to 3 cards from your hand: Special Summon that many Zombie Tokens (T1 Dungeon, melee, movable, d6) to an empty Barracks square you control.",
   "fx": "bone_harvester",
   "status": "final",
   "art_note": ""
@@ -1240,7 +1240,7 @@
   "rarity": "legendary",
   "attack": "melee",
   "movable": true,
-  "skill": "Special Summon up to 4 Skeleton Knight Tokens (T2 Dungeon, melee, d8) to an empty Barracks square you control. Pay the cost in any combination of banishing Dungeon Dwellers from your Discard pile, discarding from your hand, or milling from your deck.",
+  "skill": "Special Summon up to 4 Skeleton Knight Tokens (T2 Dungeon, melee, movable, d8) to an empty Barracks square you control. Pay the cost in any combination of banishing Dungeon Dwellers from your Discard pile, discarding from your hand, or milling from your deck.",
   "fx": "charnel_sovereign",
   "status": "final",
   "art_note": ""

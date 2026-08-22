@@ -123,11 +123,11 @@ CARDS = []
 #      wherever its own text says - beside itself, on both flanks, on the
 #      square where it died - with no new engine code per card.
 TOKEN_STATS = {
-    "Bear Token":            "T2 Forest, melee, d8",
-    "Squirrel Token":        "T1 Forest, melee, d6",
-    "Zombie Token":          "T1 Dungeon, melee, d6",
-    "Wisp Token":            "T1 Lava, ranged, d6",
-    "Skeleton Knight Token": "T2 Dungeon, melee, d8",
+    "Bear Token":            "T2 Forest, melee, movable, d8",
+    "Squirrel Token":        "T1 Forest, melee, movable, d6",
+    "Zombie Token":          "T1 Dungeon, melee, movable, d6",
+    "Wisp Token":            "T1 Lava, ranged, movable, d6",
+    "Skeleton Knight Token": "T2 Dungeon, melee, movable, d8",
 }
 
 # The landing squares the rules currently recognise. Adding one here is all a
@@ -513,13 +513,15 @@ card("Skeleton Knight Token", S, 2, "dungeon", "token", "melee", True,
 # design decision, not lost data.
 # ----------------------------------------------------------------------
 card("Charnel Reaper", S, 3, "dungeon", "rare", "ranged", True,
-     "Banish 2 cards from your Discard pile: Special Summon 2 Tokens adjacent to "
-     "this Unit.", "charnel_reaper")
+     "Banish 2 cards from your Discard pile: Special Summon "
+     + tok(2, "Zombie Token", WHERE_ADJ) + ".", "charnel_reaper")
 card("Bone Harvester", S, 3, "dungeon", "epic", "melee", True,
-     "Discard up to 3 cards from your hand: Special Summon that many Tokens.",
+     "Discard up to 3 cards from your hand: Special Summon that many Zombie "
+     "Tokens (" + TOKEN_STATS["Zombie Token"] + ") " + WHERE_BARRACKS + ".",
      "bone_harvester")
 card("Charnel Sovereign", S, 4, "dungeon", "legendary", "melee", True,
-     "Special Summon up to 4 Skeleton Knight Tokens (T2 Dungeon, melee, d8) "
+     "Special Summon up to 4 Skeleton Knight Tokens ("
+     + TOKEN_STATS["Skeleton Knight Token"] + ") "
      + WHERE_BARRACKS + ". Pay the cost in any combination of banishing Dungeon "
      "Dwellers from your Discard pile, discarding from your hand, or milling "
      "from your deck.", "charnel_sovereign")
