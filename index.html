@@ -190,10 +190,15 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 
 #side2{width:min(340px,32vw);background:var(--panel);border-left:1px solid #000;
   display:flex;flex-direction:column;min-height:0;
-  transition:width .18s ease}
+  transition:width .18s ease, max-height .18s ease}
 /* Minimised log. The board is the thing people came to look at, so the log
-   folds away and gives its width back rather than merely hiding. The button
-   stays put so it is obvious how to get it back. */
+   folds away and gives its space back rather than merely hiding. The button
+   stays put so it is obvious how to get it back.
+
+   NOTE: width alone is only enough while the log is a COLUMN beside the
+   board. In portrait it stacks BELOW the board, where the space it occupies
+   is height, not width - so zeroing width there left a blank strip and gave
+   nothing back. The portrait override lives in the narrow media query. */
 #game.logmin #side2{width:0;border-left:none;overflow:hidden}
 #game.logmin #logTab{background:linear-gradient(#4a3d22,#332a19);color:var(--gold)}
 #log{flex:1;overflow-y:auto;padding:var(--pad);font-size:.95em;font-family:var(--ui);line-height:1.5}
@@ -669,6 +674,13 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
   #game .body{flex-direction:column}
   #side2{width:100%;border-left:none;border-top:1px solid #000;max-height:34vh}
   #side{width:100%}
+  /* Portrait stacks the log UNDER the board, so folding it away has to give
+     back HEIGHT. The global rule only zeroes width, which collapsed nothing
+     here and left a blank strip roughly 9.5em tall - the padding-bottom that
+     keeps content clear of the fixed action bar survived the collapse.
+     Zero every vertical contributor, not just one. */
+  #game.logmin #side2{max-height:0;min-height:0;padding-top:0;padding-bottom:0;
+    border-top:none;overflow:hidden}
 }
 </style>
 </head>
@@ -1196,7 +1208,7 @@ defaultDecks();
 const TOA_VERSION="0.03";
 /* Stamped at build time. If a bug report and this string disagree, the
    build being played is not the build that was fixed. */
-const TOA_BUILD="2026-08-22 09:20";
+const TOA_BUILD="2026-08-22 11:25";
 addEventListener("DOMContentLoaded",()=>{
   const f=$("startFoot"); if(!f) return;
   const playable=PLAYABLE.length, sets=[...new Set(PLAYABLE.map(c=>c.set))].length;
@@ -3514,8 +3526,26 @@ function fitBoard(){
   if(SCREEN!=="game") return;
   const wrap=$("boardWrap"); if(!wrap) return;
   const bar =document.querySelector("#game .bar");
+  // In portrait the log stacks BELOW the board and eats real vertical space.
+  // It used to be left out of this sum, so the board was sized as though the
+  // log were free - and folding the log away handed back space the board had
+  // never been told about, so nothing grew. Count it whenever it is in flow.
+  // Read the CLASS, not the measured height: toggleLog calls this straight
+  // away and the collapse is a 180ms transition, so measuring here would
+  // read the old height every time. Same trap as clientWidth during render.
+  const s2   = $("side2");
+  const body = document.querySelector("#game .body");
+  // Portrait is exactly the case where .body stacks into a column and the
+  // log is a normal in-flow block under the board. Landscape keeps it as a
+  // side column, and narrow-landscape makes it a fixed drawer - in both of
+  // those it costs the board no height at all.
+  const stacked = s2 && body &&
+                  getComputedStyle(body).flexDirection === "column" &&
+                  getComputedStyle(s2).position !== "fixed";
+  const folded  = $("game").classList.contains("logmin");
+  const logH    = (stacked && !folded) ? s2.offsetHeight : 0;
   const used = (bar?bar.offsetHeight:0) + $("zones").offsetHeight +
-               $("selbar").offsetHeight + $("hand").offsetHeight + 42;
+               $("selbar").offsetHeight + $("hand").offsetHeight + logH + 42;
   const byH = Math.floor((innerHeight - used) / 6) - 3;
   // in landscape the gutters are fixed overlays and the log is a drawer, so
   // neither steals width from the board
