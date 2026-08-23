@@ -5,7 +5,7 @@ Rummaging Rodent,1,dungeon,melee,yes,common,On Normal Summon: draw 1 card.,,1,3,
 Crypt Bat,1,dungeon,melee,yes,common,Swap places with any Unit you control on the board.,,1,4,ASH,ASH,swap_friendly,final
 Flaming Jack Rabbit,1,lava,melee,yes,common,"If this card would be discarded or destroyed, shuffle it into your deck instead of sending it to the Discard pile.",,1,5,ASH,ASH,recycle_self,final
 Cinder Bat,1,lava,melee,yes,common,On Death: adjacent Lava Dwellers add +1 to their next roll this turn; adjacent non-Lava Dwellers subtract 1 from their next roll this turn.,,1,6,ASH,ASH,death_lava_swing,final
-Disembodied Hand,1,dungeon,melee,yes,common,"Roll this Unit's die. On a 1, 3 or 5, look at the top card of your opponent's deck and return it to the top.",,1,7,ASH,ASH,peek_top,final
+Disembodied Hand,1,dungeon,melee,yes,common,"Once per turn: look at the top card of your opponent's deck, then leave it on top or send it to the bottom of their deck.",,1,7,ASH,ASH,peek_top,final
 Skeleton,1,dungeon,melee,yes,common,,,1,8,ASH,ASH,vanilla,final
 Skeletal Archer,1,dungeon,ranged,yes,common,,,1,9,ASH,ASH,vanilla,final
 Graveyard Wraith,1,dungeon,melee,yes,common,Dungeon Dwellers in the 8 adjacent squares add +1 to their rolls.,,1,10,ASH,ASH,aura_plus1_dungeon,final
@@ -18,11 +18,11 @@ Grave Shifter,1,dungeon,melee,yes,uncommon,"Swap places with any Unit on the boa
 Immovable Bog,1,dungeon,melee,no,common,Dungeon and Forest Dwellers in the 8 adjacent squares add +1 to their rolls. All other Dweller Types in those squares subtract 3.,,1,17,ASH,ASH,aura_bog,final
 Molten Field,1,lava,melee,no,common,"Lava Dwellers in the 8 adjacent squares add +1 to their rolls. At the start of your Recruitment Phase, Special Summon 1 Wisp Token (T1 Lava, ranged, movable, d6) to an empty Barracks square you control.",,1,18,ASH,ASH,aura_lava_and_wisp,final
 Cinder Skeleton,1,lava,ranged,yes,common,During your Recruitment Phase: you may attach this card from your hand to an adjacent Lava Dweller you control as a Ride. This does not use your Normal Summon.,,1,19,ASH,ASH,ride_from_hand_lava,final
-Bone Diviner,1,dungeon,ranged,yes,uncommon,"Discard this card from your hand, then roll a d6. On 1 to 4, every Unit your opponent controls of the corresponding Tier subtracts 2 from its rolls until the end of their next turn. On 5 or 6, nothing happens.",,1,20,ASH,ASH,bone_diviner,final
-Magma Mine,1,lava,ranged,yes,uncommon,"Discard this card from your hand, then roll a d6. On 1 to 4, destroy 1 Unit your opponent controls of the corresponding Tier. On 5 or 6, nothing happens.",,1,21,ASH,ASH,magma_mine,final
+Bone Diviner,1,dungeon,ranged,yes,uncommon,"Discard this card from your hand, then roll a d6. Every face-up Unit your opponent controls with a Tier lower than your roll subtracts 2 from its rolls until the end of their next turn.",,1,20,ASH,ASH,bone_diviner,final
+Magma Mine,1,lava,ranged,yes,uncommon,"Discard this card from your hand, then roll a d6. Choose 1 face-up Unit your opponent controls with a Tier lower than your roll and destroy it.",,1,21,ASH,ASH,magma_mine,final
 Armored Skeleton,2,dungeon,melee,yes,common,,,1,22,ASH,ASH,vanilla,final
 Skeleton Archer,2,dungeon,ranged,yes,common,,,1,23,ASH,ASH,vanilla,final
-Skeletal Mage,2,dungeon,ranged,yes,common,"Once per turn: roll this Unit's die. On a 7 or 8, mill the top 2 cards of your opponent's deck.",,1,24,ASH,ASH,mage_mill,final
+Skeletal Mage,2,dungeon,ranged,yes,common,"Once per turn: roll this Unit's die. Mill the top card of your opponent's deck. On a 7 or 8, mill 3 cards instead.",,1,24,ASH,ASH,mage_mill,final
 Shallow Grave,2,dungeon,melee,no,common,"Mandatory. Every Recruitment Phase: Special Summon 1 Zombie Token (T1 Dungeon, melee, movable, d6) to an empty Barracks square you control. This is not optional.",,1,25,ASH,ASH,spawn_zombie_mandatory,final
 Fire Imp,2,lava,ranged,yes,common,,,1,26,ASH,ASH,vanilla,final
 Undead Mare,2,dungeon,melee,yes,common,"If a Tier 1 Unit Rides this card, the stack adds +2 to its roll in battle.",,1,27,ASH,ASH,ridden_by_t1_plus2,final

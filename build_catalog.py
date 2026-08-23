@@ -379,9 +379,12 @@ card("Cinder Bat", S, 1, "lava", "common", "melee", True,
      "On Death: adjacent Lava Dwellers add +1 to their next roll this turn; "
      "adjacent non-Lava Dwellers subtract 1 from their next roll this turn.",
      "death_lava_swing")
+# Was a coin flip that produced information and nothing else - it could not
+# change the game even when it "worked". Now it always fires and the look is a
+# real decision: leave their draw alone, or bury it.
 card("Disembodied Hand", S, 1, "dungeon", "common", "melee", True,
-     "Roll this Unit's die. On a 1, 3 or 5, look at the top card of your "
-     "opponent's deck and return it to the top.", "peek_top")
+     "Once per turn: look at the top card of your opponent's deck, then leave "
+     "it on top or send it to the bottom of their deck.", "peek_top")
 card("Skeleton", S, 1, "dungeon", "common", "melee", True, "", "vanilla")
 card("Skeletal Archer", S, 1, "dungeon", "common", "ranged", True, "", "vanilla")
 card("Graveyard Wraith", S, 1, "dungeon", "common", "melee", True,
@@ -418,15 +421,19 @@ card("Cinder Skeleton", S, 1, "lava", "common", "ranged", True,
      "During your Recruitment Phase: you may attach this card from your hand to "
      "an adjacent Lava Dweller you control as a Ride. This does not use your "
      "Normal Summon.", "ride_from_hand_lava")
-# Twin of Magma Mine: same roll, same tier mapping, debuff instead of destroy.
-# Hits EVERY Unit of that Tier, so it is broader and weaker per Unit.
+# Twin of Magma Mine: same roll, same threshold, debuff instead of destroy.
+# Hits EVERY Unit under the roll, so it is broader and weaker per Unit.
 card("Bone Diviner", S, 1, "dungeon", "uncommon", "ranged", True,
-     "Discard this card from your hand, then roll a d6. On 1 to 4, every Unit your "
-     "opponent controls of the corresponding Tier subtracts 2 from its rolls until "
-     "the end of their next turn. On 5 or 6, nothing happens.", "bone_diviner")
+     "Discard this card from your hand, then roll a d6. Every face-up Unit your "
+     "opponent controls with a Tier lower than your roll subtracts 2 from its "
+     "rolls until the end of their next turn.", "bone_diviner")
+# Roll high, hit anything under it. The old wording needed the opponent to be
+# holding a Unit of EXACTLY the rolled Tier and did nothing on a 5 or 6 - against
+# real mid-game boards that was a dead card two times in three. Now only a 1
+# whiffs, and a high roll threatens the whole board.
 card("Magma Mine", S, 1, "lava", "uncommon", "ranged", True,
-     "Discard this card from your hand, then roll a d6. On 1 to 4, destroy 1 Unit "
-     "your opponent controls of the corresponding Tier. On 5 or 6, nothing happens.",
+     "Discard this card from your hand, then roll a d6. Choose 1 face-up Unit your "
+     "opponent controls with a Tier lower than your roll and destroy it.",
      "magma_mine")
 
 # --- Tier 2 -----------------------------------------------------------
@@ -434,9 +441,12 @@ card("Armored Skeleton", S, 2, "dungeon", "common", "melee", True, "", "vanilla"
 card("Skeleton Archer", S, 2, "dungeon", "common", "ranged", True, "", "vanilla")
 # Doc flag 3: wording never confirmed. Written to the deck's stated identity -
 # "utility Tier 2s and 3s doing mill, discard-to-activate, hand disruption".
+# 7-or-8 on a d8 meant three turns in four did nothing at all. It always mills
+# now, and the original 7-8 window is kept as the spike so the card still has
+# its moment.
 card("Skeletal Mage", S, 2, "dungeon", "common", "ranged", True,
-     "Once per turn: roll this Unit's die. On a 7 or 8, mill the top 2 cards of "
-     "your opponent's deck.", "mage_mill")
+     "Once per turn: roll this Unit's die. Mill the top card of your opponent's "
+     "deck. On a 7 or 8, mill 3 cards instead.", "mage_mill")
 card("Shallow Grave", S, 2, "dungeon", "common", "melee", False,
      "Mandatory. Every Recruitment Phase: Special Summon " + tok(1, "Zombie Token", WHERE_BARRACKS) + ". This is not optional.", "spawn_zombie_mandatory")
 card("Fire Imp", S, 2, "lava", "common", "ranged", True, "", "vanilla")
