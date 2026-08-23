@@ -1297,10 +1297,10 @@ function defaultDecks(){
 defaultDecks();
 /* Shown on the start screen so players can see at a glance when the
    collection grows - AJ keeps this build current as cards are added. */
-const TOA_VERSION="0.04";
+const TOA_VERSION="0.05";
 /* Stamped at build time. If a bug report and this string disagree, the
    build being played is not the build that was fixed. */
-const TOA_BUILD="2026-08-23 18:11";
+const TOA_BUILD="2026-08-23 19:42";
 addEventListener("DOMContentLoaded",()=>{
   const f=$("startFoot"); if(!f) return;
   const playable=PLAYABLE.length, sets=[...new Set(PLAYABLE.map(c=>c.set))].length;
@@ -4373,6 +4373,13 @@ function runActive(card, ctx){
        mid-game boards it was a dead card two times in three. Now only a
        roll of 1 whiffs, and a high roll threatens the whole board. */
     case "magma_mine": {
+      /* THE DISCARD IS THE COST, AND THE CARD SAYS IT COMES FIRST:
+         "Discard this card from your hand, THEN roll a d6."
+         It used to be paid inside the pickSquare callback, which meant the
+         card sat in your hand through the entire targeting step and looked
+         like it never discarded at all - and if the pick was left open, or
+         the turn ended on it, the cost was never paid. Pay, then roll. */
+      discardFromHand(card);
       const v=d(6); flyRoll(me,v,"Magma Mine","tower"); say("",`  rolled d6 = ${v}`);
       const legal=(r,c,u)=> !!u && u.own===foe && !u.fd && u.cards[0].tier < v
                             && !isUntargetable(r,c);
@@ -4381,7 +4388,7 @@ function runActive(card, ctx){
       if(!any){
         say("r", v===1 ? "  rolled a 1 — nothing is below Tier 1"
                        : `  they control no face-up Unit below Tier ${v}`);
-        discardFromHand(card); return true;
+        return true;
       }
       pickSquare(`Destroy a face-up enemy Unit below Tier ${v}`, legal,
         (sel)=>{ if(sel && sel[0]){
@@ -4389,7 +4396,7 @@ function runActive(card, ctx){
             say("g",`  MAGMA MINE destroys ${label(G.board[r][c])}`);
             doKill(r,c,"Magma Mine");
           }
-          discardFromHand(card); render(); });
+          render(); });
       return true; }
 
     /* The debuff twin. This used to roll, print "resolve at the table" and
@@ -4400,6 +4407,10 @@ function runActive(card, ctx){
        hit everything under it. Tier-matching meant it usually found nobody
        even on a "successful" roll. */
     case "bone_diviner": {
+      // Same reading as Magma Mine: "Discard this card from your hand, THEN
+      // roll a d6." No pick here so nothing was ever lost, but the log used to
+      // narrate it backwards.
+      discardFromHand(card);
       const v=d(6); flyRoll(me,v,"Bone Diviner","tower"); say("",`  rolled d6 = ${v}`);
       const hit=unitsOf(foe).filter(x=>!x.u.fd && x.u.cards[0].tier < v);
       if(hit.length){
@@ -4409,7 +4420,7 @@ function runActive(card, ctx){
         say("r", v===1 ? "  rolled a 1 — nothing is below Tier 1"
                        : `  they control no face-up Unit below Tier ${v}`);
       }
-      discardFromHand(card); return true; }
+      return true; }
 
     case "cycle_two": {                       // Doe
       if(P.hand.length<2) { say("r","  not enough cards in hand"); return true; }
@@ -4450,18 +4461,23 @@ function runActive(card, ctx){
     case "search_discard_dungeon": case "search_discard_lava": {
       const want = card.fx.endsWith("lava") ? "lava" : "dungeon";
       const maxT = card.fx.includes("summon") ? 3 : 4;
+      /* SAME FIX AS MAGMA MINE. The cost used to be paid inside the callback,
+         after a successful search - and `if(!got) return render()` meant a
+         cancelled search paid NOTHING. You could activate, read your whole
+         deck, back out, and still be holding the card, every turn, for free.
+         These cards read "Discard this card from your hand:" and "Banish this
+         card from your Discard pile:" - the cost is on activation. */
+      if(card.fx.startsWith("search_discard")) discardFromHand(card);
+      if(card.fx.startsWith("search_banish") && ctx && ctx.zone==="disc"){
+        const i=P.disc.findIndex(x=>x.id===card.id);
+        if(i>=0){ P.banish.push(P.disc.splice(i,1)[0]);
+          say("d","  this card is banished as the cost"); }
+      }
       pickFromZones(`Search your deck for a Tier 1-${maxT} ${CAP(want)} Dweller`,
         me, ["deck"], FILT.dweller(want,maxT),
         (got)=>{ if(!got) return render();
           P.hand.push(got.card);
           say("g",`  searched out ${got.card.name}`);
-          // pay the cost only once the search actually resolves
-          if(card.fx.startsWith("search_banish") && ctx && ctx.zone==="disc"){
-            const i=P.disc.findIndex(x=>x.id===card.id);
-            if(i>=0){ P.banish.push(P.disc.splice(i,1)[0]);
-              say("d","  this card is banished as the cost"); }
-          }
-          if(card.fx.startsWith("search_discard")) discardFromHand(card);
           render(); },
         "only Units this card can legally take are shown");
       return true; }
@@ -4550,7 +4566,13 @@ function discardFromHand(card){
 function doActivate(cardId){
   const card = BY_ID[cardId]; if(!card) return closeModal();
   const ctx = SKILL_CTX;
-  const u = ctx ? G.board[ctx.r][ctx.c] : null;
+  /* A ctx is EITHER a board square {r,c} OR a zone {zone,player,index}. This
+     used to treat any truthy ctx as a square, so activating from the Discard
+     pile evaluated G.board[undefined][undefined] and threw before the Skill
+     ever ran - which killed Sepulcher Hunter and Magma Seeker outright, since
+     activating from the Discard is the entire point of those two cards. */
+  const onBoard = !!(ctx && ctx.r!==undefined && ctx.c!==undefined);
+  const u = onBoard ? G.board[ctx.r][ctx.c] : null;
   if(AUTO_FX.has(card.fx)){
     say("r",`  ${card.name} fires on its own — there is nothing to activate`);
     return closeModal();
