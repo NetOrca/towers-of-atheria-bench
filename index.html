@@ -139,6 +139,57 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .z-tower{background:#2e2412;box-shadow:inset 0 0 0 2px var(--gold)}
 .sq.p1side{border-bottom:2px solid rgba(63,111,168,.35)}
 .sq.p2side{border-top:2px solid rgba(180,118,44,.35)}
+
+/* ---- WHOSE TURN IS IT -----------------------------------------------
+   ONE colour language, said in three places at once, so the answer is
+   never more than a glance away:
+     the board frame   - persistent, ambient, always on screen
+     the action bar    - a worded chip, for anyone who wants it in words
+     the banner        - a one-second sweep at the moment control changes
+   Blue is player one and amber is player two everywhere else in the game
+   (--p1 / --p2, the unit rings, the side markers), so the turn skin reuses
+   exactly those and invents no new colours. */
+#boardWrap{position:relative}
+#board{transition:box-shadow .25s ease, border-color .25s ease}
+#game.turn-you  #board{border-color:#6f9fd8;
+  box-shadow:0 0 0 2px rgba(63,111,168,.55), 0 0 26px rgba(63,111,168,.30)}
+#game.turn-foe  #board{border-color:#c98f43;
+  box-shadow:0 0 0 2px rgba(180,118,44,.50), 0 0 26px rgba(180,118,44,.22)}
+#game.turn-over #board{border-color:var(--edge);box-shadow:none}
+
+#turnBanner{position:absolute;left:0;right:0;top:22%;z-index:40;
+  display:none;place-items:center;pointer-events:none;text-align:center}
+#turnBanner.on{display:grid;animation:tbSweep 1.5s ease forwards}
+#turnBanner .tbig{font-size:clamp(26px,5.2vmin,58px);font-weight:800;letter-spacing:.14em;
+  text-transform:uppercase;font-family:var(--ui);
+  text-shadow:0 2px 0 #000,0 0 26px rgba(0,0,0,.9)}
+#turnBanner .tsub{font-family:var(--ui);font-size:clamp(12px,1.7vmin,17px);
+  letter-spacing:.18em;text-transform:uppercase;color:var(--parch);
+  text-shadow:0 1px 4px #000,0 0 12px #000;margin-top:.35em}
+#turnBanner.you .tbig{color:#8fbdf0}
+#turnBanner.foe .tbig{color:#e0a95c}
+@keyframes tbSweep{
+  0%  {opacity:0;transform:translateY(14px) scale(.96)}
+  18% {opacity:1;transform:translateY(0)    scale(1)}
+  72% {opacity:1}
+  100%{opacity:0;transform:translateY(-10px)}
+}
+/* Someone playing their twentieth match does not need the banner every
+   turn. Respecting the OS setting costs one line and is the right default
+   for anyone who finds motion unpleasant. */
+@media (prefers-reduced-motion:reduce){
+  #turnBanner.on{animation:none;opacity:1}
+}
+
+/* The worded half of the same signal. */
+#selbar .turnChip{font-family:var(--ui);font-weight:800;letter-spacing:.09em;
+  text-transform:uppercase;font-size:.82em;padding:.32em .7em;border-radius:3px;
+  border:1px solid transparent;white-space:nowrap}
+#selbar .turnChip.you{color:#0f1722;background:linear-gradient(#8fbdf0,#5c8fc4);
+  border-color:#a9d0f7}
+#selbar .turnChip.foe{color:#1c1408;background:linear-gradient(#e0a95c,#b4762c);
+  border-color:#f0c98a}
+#selbar .turnChip.over{color:var(--dim);background:#2a241a;border-color:var(--edge)}
 .sq .lbl{position:absolute;bottom:1px;right:3px;font-size:.62em;color:#463d2e;font-family:var(--ui)}
 /* Legal-target highlighting.
    These used to be a 2px outline on the SQUARE - but an attackable square is
@@ -201,6 +252,19 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
    nothing back. The portrait override lives in the narrow media query. */
 #game.logmin #side2{width:0;border-left:none;overflow:hidden}
 #game.logmin #logTab{background:linear-gradient(#4a3d22,#332a19);color:var(--gold)}
+/* The log is the game's black box. A tester who just watched something odd
+   needs to be able to hand the whole match over without describing it from
+   memory, so the header carries an Export button that writes the match to a
+   text file. */
+#logHead{display:flex;align-items:center;gap:.6em;padding:.45em var(--pad);
+  border-bottom:1px solid #000;background:var(--panel2);
+  font-family:var(--ui);font-size:.82em;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--dim);flex:0 0 auto}
+#logHead span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#btnExportLog{font-family:var(--ui);font-size:.95em;font-weight:700;cursor:pointer;
+  background:linear-gradient(#4a3d22,#332a19);color:var(--gold);
+  border:1px solid var(--edge);border-radius:3px;padding:.3em .8em;letter-spacing:.06em}
+#btnExportLog:hover{background:linear-gradient(#5d4c2b,#40351f)}
 #log{flex:1;overflow-y:auto;padding:var(--pad);font-size:.95em;font-family:var(--ui);line-height:1.5}
 #log div{margin-bottom:.18em}
 .l-h{color:var(--gold);font-weight:700;margin-top:.5em}
@@ -684,6 +748,10 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
     padding:.5em .7em calc(.5em + env(safe-area-inset-bottom,0px));
     box-shadow:0 -8px 20px rgba(0,0,0,.6)}
   #selbar .spacer{display:none}
+  /* The bar stacks into a column on phones. Whose turn it is goes at the very
+     top of that column - above even the phase button - because it is the
+     thing you look for first when you pick the phone back up. */
+  #selbar .turnChip{order:-2;width:100%;text-align:center;padding:.45em;font-size:.9em}
   #selbar .bigbtn.phase{order:-1;width:100%;font-size:1.08em;padding:.65em 1em}
   #selbar .bigbtn.skill{width:100%}
   #selbar .phaseNow{text-align:center;font-size:.95em}
@@ -819,8 +887,14 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
       <div id="zones"></div>
       <div id="selbar"></div>
       <div id="handWrap"><div id="handCount"></div><div id="hand"></div></div>
+      <div id="turnBanner"></div>
     </div>
     <div id="side2">
+      <div id="logHead">
+        <span>Battle log</span>
+        <button id="btnExportLog" onclick="exportLog()"
+                title="save this match to a text file">Export</button>
+      </div>
       <div id="log"></div>
     </div>
     <button id="logTab" title="show or hide the battle log">LOG</button>
@@ -888,7 +962,17 @@ function noise({t=0.16,gain=.14,delay=0,hp=800}){
 }
 
 const SFX={
-  draw:   ()=>{ noise({t:.10,gain:.07,hp:2600}); tone({f:620,to:900,t:.09,gain:.05,type:"sine"}); },
+  /* The old draw sound was a 0.1s wisp of high noise at gain .07 - under the
+     music it was inaudible, which is why the start of a turn never announced
+     itself. It is now a real two-note figure. YOUR draw rises and the
+     OPPONENT'S falls, so from the next room you still know whose turn began
+     without looking at the screen. */
+  draw:   ()=>{ noise({t:.09,gain:.06,hp:2400});
+                tone({f:523.25,t:.13,type:"triangle",gain:.15});
+                tone({f:783.99,t:.20,type:"triangle",gain:.13,delay:.09}); },
+  drawFoe:()=>{ noise({t:.09,gain:.05,hp:1800});
+                tone({f:392.00,t:.13,type:"triangle",gain:.12});
+                tone({f:293.66,t:.20,type:"triangle",gain:.11,delay:.09}); },
   battle: ()=>{ noise({t:.16,gain:.16,hp:1100}); tone({f:180,to:70,t:.20,gain:.16,type:"sawtooth"}); },
   ride:   ()=>{ tone({f:300,to:520,t:.16,type:"triangle",gain:.13});
                 tone({f:450,to:760,t:.16,type:"triangle",gain:.09,delay:.06}); },
@@ -1297,10 +1381,10 @@ function defaultDecks(){
 defaultDecks();
 /* Shown on the start screen so players can see at a glance when the
    collection grows - AJ keeps this build current as cards are added. */
-const TOA_VERSION="0.05";
+const TOA_VERSION="0.06";
 /* Stamped at build time. If a bug report and this string disagree, the
    build being played is not the build that was fixed. */
-const TOA_BUILD="2026-08-23 19:42";
+const TOA_BUILD="2026-08-24 06:04";
 addEventListener("DOMContentLoaded",()=>{
   const f=$("startFoot"); if(!f) return;
   const playable=PLAYABLE.length, sets=[...new Set(PLAYABLE.map(c=>c.set))].length;
@@ -1912,11 +1996,87 @@ function drawPhase(){
     const top    = P.deck.pop();         // one card off the deck regardless
     P.hand.push(chosen || top);
   }
-  sfx("draw");
+  /* A DRAW PHASE IS THE MOMENT CONTROL CHANGES HANDS, so it is the one place
+     worth spending both a sound and a banner on. The sound differs by seat,
+     the banner names the seat, and the persistent board glow keeps answering
+     the question for the rest of the turn. */
+  const mine = !isNPC(G.cur) && !AUTOPLAY;
+  sfx(mine ? "draw" : "drawFoe");
   say("d",`draw — deck ${P.deck.length}`);
   G.phase=1;
+  turnBanner();
   startOfRecruitment();
 }
+
+/* ---- WHOSE TURN IS IT ------------------------------------------------
+   Three signals, one source of truth. Called from render() so it can never
+   drift out of step with the board it is describing. */
+function turnSide(){
+  if(!G) return "over";
+  if(G.over) return "over";
+  if(AUTOPLAY) return G.cur===1 ? "you" : "foe";   // watching: P1 reads as "blue"
+  return isNPC(G.cur) ? "foe" : "you";
+}
+function setTurnSkin(){
+  const g=$("game"); if(!g) return;
+  const s=turnSide();
+  g.classList.toggle("turn-you",  s==="you");
+  g.classList.toggle("turn-foe",  s==="foe");
+  g.classList.toggle("turn-over", s==="over");
+}
+let TB_TIMER=null;
+function turnBanner(){
+  const el=$("turnBanner"); if(!el||!G||G.over) return;
+  const s=turnSide();
+  const who = AUTOPLAY ? esc(G.P[G.cur].name)
+            : s==="you" ? "Your turn" : esc(G.P[G.cur].name);
+  el.className="";                     // restart the animation from zero
+  void el.offsetWidth;                 // reflow, or the class swap is coalesced
+  el.innerHTML=`<div class="tbig">${who}</div>
+                <div class="tsub">turn ${G.turn} · recruitment phase</div>`;
+  el.classList.add(s==="you"?"you":"foe","on");
+  clearTimeout(TB_TIMER);
+  TB_TIMER=setTimeout(()=>{ el.className=""; }, 1600);
+}
+
+/* ---- EXPORT THE MATCH ------------------------------------------------
+   A tester who has just done something surprising should be able to hand
+   over the whole match rather than describe it from memory. Plain text, so
+   it pastes into a message, an issue or a chat without ceremony. */
+function exportLog(){
+  if(!G) return;
+  const pad = n => String(n).padStart(2,"0");
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`+
+                `_${pad(d.getHours())}${pad(d.getMinutes())}`;
+  const foe = NPC_ON ? (NPC_PROFILES[NPC_LEVEL]||{}).name || NPC_LEVEL : "human";
+  const head = [
+    `Towers of Atheria — Dweller Clash`,
+    `match log exported ${d.toString()}`,
+    ``,
+    `build          v${TOA_VERSION}  (${TOA_BUILD})`,
+    `mode           ${AUTOPLAY ? "autoplay (AI vs AI)" : NPC_ON ? "vs opponent" : "two players, one device"}`,
+    `opponent       ${NPC_ON ? `${foe} [${NPC_LEVEL}]` : "—"}`,
+    AUTOPLAY && NPC_P1_LEVEL ? `seat 1 driven by  ${NPC_P1_LEVEL}` : null,
+    `P1  ${G.P[1].name}   deck ${G.P[1].deck.length}  hand ${G.P[1].hand.length}  discard ${G.P[1].disc.length}  banished ${G.P[1].banish.length}`,
+    `P2  ${G.P[2].name}   deck ${G.P[2].deck.length}  hand ${G.P[2].hand.length}  discard ${G.P[2].disc.length}  banished ${G.P[2].banish.length}`,
+    `reached turn ${G.turn}${G.over ? " — game over" : " — still in progress"}`,
+    ``,
+    `--- log ---------------------------------------------------------`,
+    ``
+  ].filter(x=>x!==null);
+  // Strip the styling class; keep the words exactly as the player saw them.
+  const body = G.log.map(l => l[1]);
+  const text = head.concat(body).join("\r\n");   // CRLF so Notepad behaves
+  const blob = new Blob([text], {type:"text/plain;charset=utf-8"});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href=url; a.download=`ToA_match_${stamp}.txt`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  sfx("click");
+}
+window.exportLog=exportLog;
 
 /* Always-on generators fire the moment Recruitment opens. Shallow Grave is
    MANDATORY per its own text, so it is not offered as a choice. */
@@ -3350,6 +3510,10 @@ function npcTurn(ME){
 let LAST_SETUP=null;
 function endGame(winner, reason){
   G.over=true;
+  // A turn banner mid-flight would otherwise keep animating UNDERNEATH the
+  // verdict - two headlines on screen at once, one of them already wrong.
+  clearTimeout(TB_TIMER);
+  if($("turnBanner")) $("turnBanner").className="";
   const p1=G.P[1], p2=G.P[2];
   const you = NPC_ON ? (winner===1?"YOU WIN":"YOU LOSE")
                      : `P${winner} WINS`;
@@ -3364,6 +3528,14 @@ function endGame(winner, reason){
     <div class="row">
       <button class="bigbtn go" onclick="rematch()">Play again</button>
       <button class="bigbtn" onclick="toMenu()">Menu</button>
+    </div>
+    <!-- The end of a match is exactly when a tester wants to send it on,
+         and it is also the last moment the log still exists - Play again
+         wipes it. Offer the export here rather than making them find the
+         log panel first. -->
+    <div class="row" style="margin-top:.9em">
+      <button class="bigbtn" onclick="exportLog()"
+              title="save this whole match to a text file">Export match log</button>
     </div>`;
   stopMusic(); sfx("win");
   $("gameover").classList.add("on");
@@ -4660,8 +4832,15 @@ function renderSelBar(){
   }
   const npcWaiting = NPC_ON && G.cur===2;
   const lbl = G.over ? "Game over" : G.phase===1 ? "To Battle" : "End Turn";
+  /* The worded third of the turn signal. The board glow is ambient and the
+     banner is momentary; this one is always on screen, in words, for anyone
+     who would rather read it than decode a colour. */
+  const s = turnSide();
+  const chip = s==="over" ? `<span class="turnChip over">Game over</span>`
+             : s==="you"  ? `<span class="turnChip you">Your turn</span>`
+             :              `<span class="turnChip foe">${esc(G.P[G.cur].name)}</span>`;
   bar.innerHTML =
-    `<span class="phaseNow">${PH[G.phase]}</span>${mid}<span class="spacer"></span>` +
+    `${chip}<span class="phaseNow">${PH[G.phase]}</span>${mid}<span class="spacer"></span>` +
     `<button class="bigbtn phase" id="btnPhase" ${G.over||npcWaiting?"disabled":""}>${lbl}</button>`;
   const b=$("btnPhase");
   if(b) b.onclick=()=>{ if(G.over||(NPC_ON&&G.cur===2)) return;
@@ -4738,6 +4917,7 @@ function render(){
   if(G.deaths) G.deaths=G.deaths.filter(x=>Date.now()-x.at<1200);   // x.at is already delayed
   if(G.parries) G.parries=G.parries.filter(x=>Date.now()-x.at<1400);
   const PH=["Draw","Recruitment","Battle","End"];
+  setTurnSkin();   // board frame follows the turn, every frame, no drift
   $("whoTurn").textContent=`P${G.cur} · ${G.P[G.cur].name} · turn ${G.turn}`;
   $("phaseTag").textContent=PH[G.phase];
   $("decks").textContent=`P1 deck ${G.P[1].deck.length} · P2 deck ${G.P[2].deck.length}`;
