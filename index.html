@@ -1543,10 +1543,10 @@ function defaultDecks(){
 defaultDecks();
 /* Shown on the start screen so players can see at a glance when the
    collection grows - AJ keeps this build current as cards are added. */
-const TOA_VERSION="0.06";
+const TOA_VERSION="0.07";
 /* Stamped at build time. If a bug report and this string disagree, the
    build being played is not the build that was fixed. */
-const TOA_BUILD="2026-08-24 06:04";
+const TOA_BUILD="2026-09-05 05:13";
 addEventListener("DOMContentLoaded",()=>{
   const f=$("startFoot"); if(!f) return;
   const playable=PLAYABLE.length, sets=[...new Set(PLAYABLE.map(c=>c.set))].length;
