@@ -102,7 +102,7 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 /* card tile */
 .tile{background:linear-gradient(160deg,var(--parch),var(--parch2));color:var(--ink);
   border:1px solid #000;border-radius:4px;padding:7px 8px;position:relative;
-  display:flex;flex-direction:column;gap:5px;min-height:190px;padding-bottom:40px;transition:.1s}
+  display:flex;flex-direction:column;gap:5px;min-height:190px;padding-bottom:50px;transition:.1s}
 .tile:hover{transform:translateY(-2px);box-shadow:0 4px 12px #0009}
 .tile .nm{font-weight:700;font-size:1.02em;line-height:1.15;padding-right:2.1em}
 .tile .mt{font-family:var(--ui);font-size:.86em;color:#6a5c42}
@@ -112,7 +112,7 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
   display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical}
 .tile .tr{position:absolute;top:5px;right:6px;width:1.85em;height:1.85em;border-radius:50%;
   background:#1c1710;color:var(--parch);display:grid;place-items:center;font-size:.8em;font-weight:700}
-.tile .cnt{position:absolute;bottom:6px;right:34px;background:#1c1710;color:var(--gold);
+.tile .cnt{position:absolute;bottom:6px;right:50px;background:#1c1710;color:var(--gold);
   border-radius:3px;padding:.05em .5em;font-size:.82em;font-weight:700}
 .tile.dim{opacity:.42}
 .tile .rar{position:absolute;bottom:10px;left:9px;width:.62em;height:.62em;transform:rotate(45deg);
@@ -157,22 +157,25 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
   box-shadow:0 0 0 2px rgba(180,118,44,.50), 0 0 26px rgba(180,118,44,.22)}
 #game.turn-over #board{border-color:var(--edge);box-shadow:none}
 
-#turnBanner{position:absolute;left:0;right:0;top:22%;z-index:40;
-  display:none;place-items:center;pointer-events:none;text-align:center}
-#turnBanner.on{display:grid;animation:tbSweep 1.5s ease forwards}
-#turnBanner .tbig{font-size:clamp(26px,5.2vmin,58px);font-weight:800;letter-spacing:.14em;
-  text-transform:uppercase;font-family:var(--ui);
-  text-shadow:0 2px 0 #000,0 0 26px rgba(0,0,0,.9)}
-#turnBanner .tsub{font-family:var(--ui);font-size:clamp(12px,1.7vmin,17px);
-  letter-spacing:.18em;text-transform:uppercase;color:var(--parch);
-  text-shadow:0 1px 4px #000,0 0 12px #000;margin-top:.35em}
+/* Used to be a full-board overlay: position:absolute over #boardWrap,
+   text up to 58px tall, sitting right on top of the field for 1.5s every
+   single turn change. That's the "can't see the field" complaint. Moved
+   inline into the top .bar instead, right next to #phaseTag which already
+   says the same phase in words - same "moment control changes" flash,
+   zero board coverage, no separate .tsub line needed since #phaseTag is
+   sitting right there already. */
+#turnBanner{display:none;pointer-events:none}
+#turnBanner.on{display:inline-block;animation:tbSweep 1.5s ease forwards}
+#turnBanner .tbig{font-size:.92em;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;font-family:var(--ui);white-space:nowrap}
+#turnBanner .tsub{display:none}
 #turnBanner.you .tbig{color:#8fbdf0}
 #turnBanner.foe .tbig{color:#e0a95c}
 @keyframes tbSweep{
-  0%  {opacity:0;transform:translateY(14px) scale(.96)}
-  18% {opacity:1;transform:translateY(0)    scale(1)}
+  0%  {opacity:0}
+  18% {opacity:1}
   72% {opacity:1}
-  100%{opacity:0;transform:translateY(-10px)}
+  100%{opacity:0}
 }
 /* Someone playing their twentieth match does not need the banner every
    turn. Respecting the OS setting costs one line and is the right default
@@ -385,9 +388,14 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .bigbtn:hover{background:linear-gradient(#fff8e6,#e6d7b4);border-color:var(--gold)}
 .bigbtn.skill{background:linear-gradient(#4a3f22,#332b18);color:var(--parch);border-color:var(--gold)}
 .bigbtn.go{background:linear-gradient(#4a7c46,#335c30);color:#fff;border-color:#6cbf63}
-.tile .info{position:absolute;bottom:5px;right:6px;width:26px;height:26px;border-radius:50%;
+/* Was 26px, a genuinely hard mobile tap target. Bumped to 44px to match the
+   .bigbtn touch-target floor used everywhere else in this file - the icon
+   still reads fine at desktop size, and it's now actually hittable with a
+   thumb. .tile's padding-bottom and .cnt's right offset were widened to
+   match, so nothing overlaps. */
+.tile .info{position:absolute;bottom:4px;right:6px;width:44px;height:44px;border-radius:50%;
   background:#1c1710;color:var(--gold);font-weight:700;display:grid;place-items:center;
-  font-family:var(--ui);font-size:.9em;border:1px solid #6b5a3e}
+  font-family:var(--ui);font-size:1.15em;border:1px solid #6b5a3e}
 .tile .info:hover{background:var(--gold);color:#1c1710}
 
 #selbar{display:flex;gap:.7em;align-items:center;flex-wrap:wrap;
@@ -575,6 +583,36 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
 .zbtn b{color:var(--gold)}
 .zbtn.empty{opacity:.45}
 .zstat{color:var(--dim);padding:0 .3em}
+/* Deck-shuffle visual feedback: simple pixel-art card-backs riffle past a
+   black stamp shape then snap together and fade - GBA-shuffle-style, no
+   image asset needed. Fires next to whichever player's deck count just
+   changed order. See markShuffle()/shuffleDeck(). */
+.shuffleFx{position:relative;display:inline-block;width:26px;height:32px;
+  margin-left:.4em;vertical-align:middle;overflow:visible}
+.shuffleFx .sfStamp{position:absolute;left:4px;top:4px;width:16px;height:22px;
+  background:#0a0806;border-radius:1px;transform:rotate(-9deg);opacity:.55;
+  animation:sfPop .9s steps(6) forwards}
+.shuffleFx .pxCard{position:absolute;left:5px;top:3px;width:14px;height:20px;
+  background:#7a1f1f;border:1px solid #0a0806;box-shadow:inset 0 0 0 1px #c9a227;
+  animation:sfRiffle .9s steps(2) forwards}
+.shuffleFx .pxCard::after{content:"";position:absolute;left:50%;top:50%;
+  width:5px;height:5px;background:#c9a227;transform:translate(-50%,-50%) rotate(45deg)}
+.shuffleFx .pxCard.c2{animation-delay:.05s}
+.shuffleFx .pxCard.c3{animation-delay:.1s}
+@keyframes sfPop{
+  0%{transform:translateY(8px) rotate(-16deg) scale(.55);opacity:0}
+  35%{transform:translateY(-5px) rotate(6deg) scale(1.1);opacity:1}
+  65%{transform:translateY(0) rotate(-3deg) scale(1);opacity:1}
+  100%{transform:translateY(-3px) rotate(-3deg) scale(1);opacity:0}
+}
+@keyframes sfRiffle{
+  0%{transform:translate(-7px,5px) rotate(-16deg) scale(.6);opacity:0}
+  20%{transform:translate(5px,-3px) rotate(12deg) scale(1);opacity:1}
+  40%{transform:translate(-4px,1px) rotate(-9deg) scale(1)}
+  60%{transform:translate(3px,-1px) rotate(7deg) scale(1)}
+  80%{transform:translate(0,-2px) rotate(-2deg) scale(1);opacity:1}
+  100%{transform:translate(0,-3px) rotate(-2deg) scale(1);opacity:0}
+}
 .zlist{display:flex;flex-direction:column;gap:.4em;max-height:50vh;overflow-y:auto;margin-top:.6em}
 .zrow{display:flex;gap:.6em;align-items:center;padding:.45em .6em;border-radius:4px;
   background:linear-gradient(160deg,var(--parch),var(--parch2));color:#1a150f}
@@ -743,21 +781,27 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
      which also stops the hint running off the edge, because in a row it had
      to share the line with the button and simply overflowed. */
   #selbar{position:fixed;left:0;right:0;bottom:0;z-index:60;
-    flex-direction:column;align-items:stretch;gap:.3em;
+    flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;
+    gap:.25em .5em;
     max-width:none;border-radius:0;border-left:none;border-right:none;
-    padding:.5em .7em calc(.5em + env(safe-area-inset-bottom,0px));
+    padding:.3em .5em calc(.3em + env(safe-area-inset-bottom,0px));
     box-shadow:0 -8px 20px rgba(0,0,0,.6)}
   #selbar .spacer{display:none}
-  /* The bar stacks into a column on phones. Whose turn it is goes at the very
-     top of that column - above even the phase button - because it is the
-     thing you look for first when you pick the phone back up. */
-  #selbar .turnChip{order:-2;width:100%;text-align:center;padding:.45em;font-size:.9em}
-  #selbar .bigbtn.phase{order:-1;width:100%;font-size:1.08em;padding:.65em 1em}
-  #selbar .bigbtn.skill{width:100%}
-  #selbar .phaseNow{text-align:center;font-size:.95em}
-  #selbar .who2{text-align:center}
-  #selbar .hint{text-align:center;white-space:normal;line-height:1.35;
-    overflow-wrap:anywhere}
+  /* 2026-09-05: this used to be a full-width column - turn chip, phase
+     button, phase name and hint each claiming their own 100%-wide bar,
+     four "banners" stacked on top of the hand. That was most of the
+     screen's height on a phone and is exactly what buried the field.
+     Same information, same look per element, just laid out side by side
+     like the landscape bar already does - only the hint (the long
+     sentence) still gets its own row, and even that is one line now
+     instead of wrapping across three. */
+  #selbar .turnChip{order:-2;width:auto;padding:.3em .7em;font-size:.82em}
+  #selbar .bigbtn.phase{order:0;width:auto;font-size:.88em;padding:.4em .9em;min-height:34px}
+  #selbar .bigbtn.skill{width:auto;min-height:34px;padding:.3em .8em}
+  #selbar .phaseNow{font-size:.8em}
+  #selbar .who2{font-size:.82em}
+  #selbar .hint{order:6;flex-basis:100%;text-align:center;font-size:.72em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   /* nothing may hide underneath the fixed bar */
   /* .4em was a guess made when the bar was a single row. In portrait the bar
      stacks into a column and runs past 100px, so the whole hand - every
@@ -799,6 +843,123 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
   #game.logmin #side2{max-height:0;min-height:0;padding-top:0;padding-bottom:0;
     border-top:none;overflow:hidden}
 }
+
+/* ===================================================================
+   VIEW OVERRIDE - forced landscape/portrait toggle (2026-09-04)
+   The two responsive breakpoints above key off the REAL viewport shape,
+   which itch.io's embed frame does not always reflect honestly (a
+   fixed-size non-Unity embed boxes the game into one aspect ratio no
+   matter how the phone is actually held). Rather than fight embed
+   settings outside this file, the #btnView toggle in the game bar lets
+   a player force either layout directly, so the game itself decides.
+
+   These are the SAME declarations as the two blocks above, copied
+   verbatim, just re-gated on a data-lp/data-pp attribute JS sets
+   (see applyView() near the end of the script) instead of a media
+   query. Placed last so they win the cascade tie over the @media
+   versions when a forced view is active. In "Auto" (no attribute set)
+   this whole block matches nothing and the @media rules above still
+   run the show exactly as before - nothing changes for a player who
+   never touches the toggle.
+   =================================================================== */
+html[data-lp]{--fs:clamp(12px,2.6vh,16px)}
+html[data-lp] .bar{padding:.2em .5em;gap:.4em;padding-left:var(--dockw,5.6em)}
+html[data-lp] .bar .tag{font-size:.72em;letter-spacing:.06em}
+html[data-lp] .tbtn{min-height:34px;padding:.3em .7em;font-size:.86em}
+html[data-lp] #game .body{flex-direction:row}
+html[data-lp] #side2{position:fixed;top:0;right:0;bottom:0;width:min(360px,58vw);
+  max-height:none;border-left:1px solid #000;border-top:none;z-index:65;
+  transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+html[data-lp] #side2.open{transform:translateX(0)}
+html[data-lp] #logTab{display:block}
+html[data-lp] #logTab.open{right:min(360px,58vw)}
+html[data-lp] #boardWrap{padding:.25em;gap:.25em;
+  padding-bottom:calc(var(--selbarh,0px) + var(--handh,0px) + .3em)}
+html[data-lp] #handWrap{position:fixed;left:0;right:0;bottom:var(--selbarh,0px);z-index:55;
+  width:auto;max-width:none;box-shadow:0 -6px 16px rgba(0,0,0,.5)}
+html[data-lp] #handCount{top:auto;bottom:calc(100% - .3em)}
+html[data-lp] #zones{font-size:.74em;gap:.3em}
+html[data-lp] #zones .zgrp{padding:.15em .35em}
+html[data-lp] .zbtn{min-height:28px;padding:.2em .5em;font-size:.9em}
+html[data-lp] #selbar{position:fixed;left:0;right:0;bottom:0;z-index:60;
+  flex-direction:row;align-items:center;flex-wrap:nowrap;gap:.5em;
+  padding:.3em .6em calc(.3em + env(safe-area-inset-bottom,0px));
+  min-height:0;border-radius:0}
+html[data-lp] #selbar .spacer{display:block;flex:1}
+html[data-lp] #selbar .bigbtn.phase{order:0;width:auto;min-height:38px;padding:.35em .9em;font-size:.95em}
+html[data-lp] #selbar .bigbtn.skill{min-height:38px;padding:.35em .8em}
+html[data-lp] #selbar .phaseNow{font-size:.8em}
+html[data-lp] #selbar .hint{font-size:.8em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:42vw}
+html[data-lp] #selbar .who2{font-size:.9em}
+html[data-lp] #hand{min-height:0;padding:4px;gap:5px}
+html[data-lp] .hcard{width:clamp(158px,23vw,196px);padding:3px 4px}
+html[data-lp] .hcard .hn{font-size:.82em;-webkit-line-clamp:1}
+html[data-lp] .hcard .hm{display:none}
+html[data-lp] .hcard .stamps{display:none}
+html[data-lp] .hcard .artbox{width:26px;height:26px;margin:0 .35em .1em 0}
+html[data-lp] .hcard .artbox img{width:20px;height:20px}
+html[data-lp] .hcard .tr{width:1.5em;height:1.5em;font-size:.72em}
+html[data-lp] .acts{gap:3px;margin-top:4px;flex-wrap:nowrap}
+html[data-lp] .acts button{min-height:26px;padding:.15em .25em;font-size:.72em;
+  flex:1 1 0;min-width:0;white-space:nowrap}
+html[data-lp] #handCount{display:none}
+html[data-lp] .gutter{position:fixed;top:26%;width:50vw;height:0;overflow:visible;
+  z-index:40;pointer-events:none;align-self:auto}
+html[data-lp] #gutL{left:0} html[data-lp] #gutR{right:0}
+html[data-lp] .gutter .roll{left:0;right:0;text-align:center}
+html[data-lp] .gutter .zlab{display:none}
+html[data-lp] .roll .rv{font-size:clamp(30px,9vh,54px)}
+html[data-lp] .roll .rl{font-size:.62em}
+
+html[data-pp]{--chrome:300px}
+html[data-pp] #bTabs{display:flex;gap:.4em}
+html[data-pp] .gutter{position:fixed;top:34%;width:50vw;height:0;overflow:visible;
+  z-index:40;pointer-events:none;align-self:auto}
+html[data-pp] #gutL{left:0} html[data-pp] #gutR{right:0}
+html[data-pp] .gutter .roll{left:0;right:0;text-align:center}
+html[data-pp] .gutter .zlab{display:none}
+html[data-pp] .roll .rv{font-size:clamp(40px,13vw,72px)}
+html[data-pp] .roll .rl{font-size:clamp(11px,3vw,14px)}
+html[data-pp] #boardRow{gap:0}
+html[data-pp] #selbar{position:fixed;left:0;right:0;bottom:0;z-index:60;
+  flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;
+  gap:.25em .5em;
+  max-width:none;border-radius:0;border-left:none;border-right:none;
+  padding:.3em .5em calc(.3em + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -8px 20px rgba(0,0,0,.6)}
+html[data-pp] #selbar .spacer{display:none}
+html[data-pp] #selbar .turnChip{order:-2;width:auto;padding:.3em .7em;font-size:.82em}
+html[data-pp] #selbar .bigbtn.phase{order:0;width:auto;font-size:.88em;padding:.4em .9em;min-height:34px}
+html[data-pp] #selbar .bigbtn.skill{width:auto;min-height:34px;padding:.3em .8em}
+html[data-pp] #selbar .phaseNow{font-size:.8em}
+html[data-pp] #selbar .who2{font-size:.82em}
+html[data-pp] #selbar .hint{order:6;flex-basis:100%;text-align:center;font-size:.72em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-pp] #boardWrap{padding-bottom:calc(var(--selbarh,0px) + var(--handh,0px) + .4em)}
+html[data-pp] #side2{padding-bottom:calc(var(--selbarh,0px) + var(--handh,0px) + 1em)}
+html[data-pp] #handWrap{position:fixed;left:0;right:0;bottom:var(--selbarh,0px);z-index:55;
+  width:auto;max-width:none;box-shadow:0 -6px 16px rgba(0,0,0,.5)}
+html[data-pp] #handCount{top:auto;bottom:calc(100% - .3em)}
+html[data-pp] #hand{position:static}
+html[data-pp] #zones{font-size:.82em}
+html[data-pp] #zones .zgrp{padding:.25em .45em}
+html[data-pp] .bar{padding:.45em .6em;padding-left:var(--dockw,5.6em)}
+html[data-pp] .bar .tag{font-size:.78em}
+html[data-pp] #builder .body{flex-direction:column}
+html[data-pp] #pool,html[data-pp] #side{width:100%;min-height:0}
+html[data-pp] #side{border-left:none;border-top:1px solid #000}
+html[data-pp] #builder:not(.showDeck) #side{display:none}
+html[data-pp] #builder.showDeck #pool{display:none}
+html[data-pp] #builder.showDeck #side{display:flex;flex:1}
+html[data-pp] #builder:not(.showDeck) #pool{display:grid;flex:1}
+html[data-pp] .filters{padding:.5em .7em}
+html[data-pp] #q{width:100%}
+html[data-pp] #game .body{flex-direction:column}
+html[data-pp] #side2{width:100%;border-left:none;border-top:1px solid #000;max-height:34vh}
+html[data-pp] #side{width:100%}
+html[data-pp] #game.logmin #side2{max-height:0;min-height:0;padding-top:0;padding-bottom:0;
+  border-top:none;overflow:hidden}
 </style>
 </head>
 <body>
@@ -873,9 +1034,11 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
     <button class="tbtn" data-back>&larr; Menu</button>
     <span class="tag" id="whoTurn"></span>
     <span class="tag" id="phaseTag"></span>
+    <div id="turnBanner"></div>
     <span class="grow"></span>
     <span class="tag" id="decks"></span>
     <button class="tbtn" id="btnRules">Rules</button>
+    <button class="tbtn" id="btnView" title="Force landscape or portrait layout, or let the device decide">View: Auto</button>
   </div>
   <div class="body">
     <div id="boardWrap">
@@ -887,7 +1050,6 @@ input[type=text],input[type=search]{background:#181410;border:1px solid var(--ed
       <div id="zones"></div>
       <div id="selbar"></div>
       <div id="handWrap"><div id="handCount"></div><div id="hand"></div></div>
-      <div id="turnBanner"></div>
     </div>
     <div id="side2">
       <div id="logHead">
@@ -1802,7 +1964,7 @@ function newGame(d1,d2,names,npc){
   G={board:Array.from({length:6},()=>Array(5).fill(null)),
      P:{1:{deck:makeDeck(d1),hand:[],disc:[],banish:[],name:names[0]},
         2:{deck:makeDeck(d2),hand:[],disc:[],banish:[],name:names[1]}},
-     cur:1,phase:0,turn:1,summonUsed:false,sel:null,mode:null,log:[],over:false};
+     cur:1,phase:0,turn:1,summonUsed:false,sel:null,viewSel:null,mode:null,log:[],over:false};
   for(const p of[1,2]) for(let i=0;i<5;i++) G.P[p].hand.push(G.P[p].deck.pop());
   say("h","=== Towers of Atheria — Dweller Clash ===");
   say("d",`P1 ${names[0]} (blue, bottom) vs P2 ${names[1]} (amber, top). Your deck is your life.`);
@@ -1851,7 +2013,7 @@ function startBench(){
       <button class="tbtn pri" onclick="benchGo()">Start</button>
       <button class="tbtn" onclick="closeModal()">Cancel</button></p>
 
-    <h2 style="margin-top:1.4em">Autoplay</h2>
+    <h2 style="margin-top:1.4em">Spectate Mode</h2>
     <p>Sit back and watch two opponents play each other. Neither side is
       yours — it runs on its own, slowly enough to follow, and the log
       explains every decision. A good way to steal ideas.</p>
@@ -1907,7 +2069,7 @@ window.autoGo=()=>{
 };
 window.stopAuto=()=>{
   AUTOPLAY=false; NPC_P1_LEVEL=null; NPC_PACE=1;
-  say("k","autoplay stopped");
+  say("k","spectate mode stopped");
   show("start");
 };
 
@@ -2055,7 +2217,7 @@ function exportLog(){
     `match log exported ${d.toString()}`,
     ``,
     `build          v${TOA_VERSION}  (${TOA_BUILD})`,
-    `mode           ${AUTOPLAY ? "autoplay (AI vs AI)" : NPC_ON ? "vs opponent" : "two players, one device"}`,
+    `mode           ${AUTOPLAY ? "spectate mode (AI vs AI)" : NPC_ON ? "vs opponent" : "two players, one device"}`,
     `opponent       ${NPC_ON ? `${foe} [${NPC_LEVEL}]` : "—"}`,
     AUTOPLAY && NPC_P1_LEVEL ? `seat 1 driven by  ${NPC_P1_LEVEL}` : null,
     `P1  ${G.P[1].name}   deck ${G.P[1].deck.length}  hand ${G.P[1].hand.length}  discard ${G.P[1].disc.length}  banished ${G.P[1].banish.length}`,
@@ -2240,8 +2402,7 @@ function doKill(r,c,why,noReplace){
     // Flaming Jack Rabbit goes back into the deck instead of the Discard
     if(card.fx==="recycle_self"){
       G.P[owner].deck.push(card);
-      for(let i=G.P[owner].deck.length-1;i>0;i--){const j=Math.random()*(i+1)|0;
-        [G.P[owner].deck[i],G.P[owner].deck[j]]=[G.P[owner].deck[j],G.P[owner].deck[i]];}
+      shuffleDeck(owner);
       say("g",`  ${card.name} is shuffled back into the deck instead`);
     } else {
       G.P[owner].disc.push(card);
@@ -2466,6 +2627,19 @@ function cellClick(r,c){
     if(a){ resolve(G.sel,a); G.sel=null; return render(); }
   }
   const u=G.board[r][c];
+  // A face-up opponent Unit couldn't be read at all before this - clicking
+  // one just cleared your own selection with no feedback. It's public
+  // information (you can see it's there and it isn't face down), so let a
+  // player look at it and its Skill text. Read-only: G.sel (which drives
+  // actionsFrom/resolve, i.e. real actions) is untouched and still only
+  // ever holds YOUR OWN Unit. This reuses the same mid-panel slot in
+  // #selbar that your own selection uses instead of adding new chrome.
+  if(u && !u.fd && u.own!==G.cur){
+    G.sel=null;
+    G.viewSel={r,c};
+    return render();
+  }
+  G.viewSel=null;
   // Selectable in Recruitment AND Battle. Recruitment is when Active Skills
   // resolve, so locking selection to Battle made every field Skill unusable.
   // actionsFrom() still returns nothing outside Battle, so no move/attack
@@ -3816,7 +3990,7 @@ function combatTriggers(atkU, defU, A, D, s, a){
     pickFromZones("Monastery Protector — return a card of your choice to your deck",
       owner, ["disc"], FILT.any,
       (got)=>{ if(!got) return render();
-        G.P[owner].deck.push(got.card); shuffle(G.P[owner].deck);
+        G.P[owner].deck.push(got.card); shuffleDeck(owner);
         say("g",`  returned ${got.card.name} to the deck`); render(); });
   }
   return killed;
@@ -3854,6 +4028,14 @@ function markStrike(r,c,kind){
 }
 function markParry(r,c){ (G.parries=G.parries||[]).push({r,c,at:Date.now()}); }
 
+/* Deck-shuffle visual feedback (hand-maintained - not part of the generated
+   catalog/stamps/sprites blocks). Fires whenever either player's deck is
+   actually reshuffled, so a card returning to the deck is visible instead of
+   a silent count tick. TOA_SHUFFLE_CARDBACK is Alfred's card-back art
+   (six-orb pixel design), resized to 80px wide and inlined so no separate
+   asset file is needed. */
+const TOA_SHUFFLE_CARDBACK="data:image/png;base64,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";
+
 /* ---- zone piles ---------------------------------------------------
    Discard and Banish are real zones with real cards, and several designs
    activate FROM them (Sepulcher Hunter banishes itself out of the Discard,
@@ -3867,9 +4049,11 @@ function renderZones(){
       const n=P[key].length;
       return `<button class="zbtn${n?"":" empty"}" ${n?`onclick="zoneList(${p},'${key}')"`:"disabled"}>${name} <b>${n}</b></button>`;
     };
+    const shuf = G.shuffles && G.shuffles.some(x=>x.p===p && Date.now()-x.at<1300);
     return `<div class="zgrp p${p}">
       <span class="zstat">P${p}</span>
-      <span class="zstat">deck <b style="color:var(--gold)">${P.deck.length}</b></span>
+      <span class="zstat">deck <b style="color:var(--gold)">${P.deck.length}</b>${shuf?
+        `<span class="shuffleFx" title="P${p} shuffled their deck"><i class="sfStamp"></i><i class="pxCard c1"></i><i class="pxCard c2"></i><i class="pxCard c3"></i></span>`:""}</span>
       <span class="zstat">hand ${P.hand.length}</span>
       ${pile("disc","Discard")}${pile("banish","Banished")}</div>`;
   };
@@ -3916,6 +4100,11 @@ function skillSheet(card, ctx){
   const rightPhase = G && G.phase===1;
   const myTurn = !NPC_ON || G.cur===1 || (inZone && ctx.player===1);
   const has = card.skill && card.fx!=="vanilla" && card.fx!=="token";
+  // A face-up opponent Unit is now clickable (see viewOpponentUnit) so a
+  // player can read it, but reading it must never let them fire it -
+  // without this check the sheet had no idea ctx.r/c belonged to someone
+  // else, and "can" only ever checked whose TURN it was, not whose UNIT it was.
+  const notMyUnit = onField && u && u.own!==G.cur;
 
   // Where is this card RIGHT NOW? No ctx at all means it was opened from the
   // hand, which is a real zone, not "unknown" - treating it as unknown is
@@ -3923,10 +4112,11 @@ function skillSheet(card, ctx){
   const where = onField ? "field" : (inZone ? ctx.zone : "hand");
   const zoneOK = sourceZones(card.fx).includes(where);
 
-  const can = has && rightPhase && myTurn && !already && !morphSick && zoneOK && !(G&&G.over);
+  const can = has && rightPhase && myTurn && !notMyUnit && !already && !morphSick && zoneOK && !(G&&G.over);
 
   let why="";
-  if(!has) why="This Unit has no Skill.";
+  if(notMyUnit) why="This is your opponent's Unit — view only.";
+  else if(!has) why="This Unit has no Skill.";
   else if(!myTurn) why="It is not your turn.";
   else if(!rightPhase) why="Active Skills resolve in the Recruitment Phase.";
   else if(already) why="This Unit already used its Skill this turn.";
@@ -4186,7 +4376,7 @@ function pickFromZones(title, player, zones, filter, cb, note){
     const entry = slot && (slot.cards[bestIdx] || slot.cards[0]);
     if(!entry) return cb(null);
     const card = G.P[player][slot.z].splice(entry.i,1)[0];
-    if(slot.z==="deck") shuffle(G.P[player].deck);
+    if(slot.z==="deck") shuffleDeck(player);
     return cb(card ? {card, zone:slot.z} : null);
   }
 
@@ -4230,7 +4420,7 @@ function pzPick(n){
   const slot=P.avail[P.tab], entry=slot.cards[n];
   const card=G.P[P.player][slot.z].splice(entry.i,1)[0];
   // Searching the deck reveals its order, so it is shuffled afterwards.
-  if(slot.z==="deck") shuffle(G.P[P.player].deck);
+  if(slot.z==="deck") shuffleDeck(P.player);
   P.cb({card, zone:slot.z});
   render();
 }
@@ -4308,6 +4498,16 @@ window.pzTab=pzTab; window.pzPick=pzPick; window.pzCancel=pzCancel;
 
 function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;
   [a[i],a[j]]=[a[j],a[i]];} return a; }
+/* Player-aware wrapper: use this (not the bare shuffle()) anywhere a deck is
+   actually being reshuffled, so the shuffle visual fires. p is the player
+   number (1 or 2) whose deck was just shuffled. */
+function markShuffle(p){ (G.shuffles=G.shuffles||[]).push({p,at:Date.now()});
+  if(SCREEN==="game"){ setTimeout(()=>render(), 0);
+    // force one more frame once the badge's own lifetime is up, so it
+    // actually disappears instead of waiting on the next unrelated render
+    setTimeout(()=>{ if(SCREEN==="game") render(); }, 1340); }
+}
+function shuffleDeck(p){ shuffle(G.P[p].deck); markShuffle(p); }
 
 /* Shorthand filters for the search cards.
    NOT called F - runActive already binds F to the opposing player, and the
@@ -4599,7 +4799,7 @@ function runActive(card, ctx){
       pickCards("Doe — shuffle 2 cards from your hand into your deck", me, "hand", 2,
         "you draw 2 afterwards",
         (got)=>{ if(!got) return render();
-          got.forEach(c=>P.deck.push(c)); shuffle(P.deck);
+          got.forEach(c=>P.deck.push(c)); shuffleDeck(me);
           for(let i=0;i<2&&P.deck.length;i++) P.hand.push(P.deck.pop());
           say("g","  shuffled 2 back and drew 2"); render(); });
       return true; }
@@ -4608,7 +4808,7 @@ function runActive(card, ctx){
       pickFromZones("Return an Honor Dweller to your deck",
         me, ["disc"], (c)=>c.dweller==="honor",
         (got)=>{ if(!got) return render();
-          P.deck.push(got.card); shuffle(P.deck);
+          P.deck.push(got.card); shuffleDeck(me);
           say("g",`  returned ${got.card.name} to the deck`); render(); });
       return true; }
 
@@ -4616,7 +4816,7 @@ function runActive(card, ctx){
       pickFromZones("Return a card from your Discard to your deck",
         me, ["disc"], FILT.any,
         (got)=>{ if(!got) return render();
-          P.deck.push(got.card); shuffle(P.deck);
+          P.deck.push(got.card); shuffleDeck(me);
           say("g",`  returned ${got.card.name} to the deck and shuffled`); render(); });
       return true; }
 
@@ -4711,7 +4911,7 @@ function runActive(card, ctx){
       pickCards("Forest Maple — shuffle 1 card from your hand into your deck", me, "hand", 1,
         "this is the cost of the Squirrel Token",
         (got)=>{ if(!got) return render();
-          P.deck.push(got[0]); shuffle(P.deck);
+          P.deck.push(got[0]); shuffleDeck(me);
           say("d",`  shuffled ${got[0].name} back as the cost`);
           spawnTokenAt(me, "Squirrel Token", sqM, "in front of this Unit");
           render(); });
@@ -4723,7 +4923,7 @@ function runActive(card, ctx){
         "all or nothing: this returns every Unit in your Discard pile to your deck",
         (got)=>{ if(!got) return render();
           got.forEach(c=>P.banish.push(c));
-          const n=P.disc.length; P.deck.push(...P.disc.splice(0)); shuffle(P.deck);
+          const n=P.disc.length; P.deck.push(...P.disc.splice(0)); shuffleDeck(me);
           say("g",`  banished 5 from hand, returned ${n} cards from the Discard to the deck`);
           render(); });
       return true; }
@@ -4765,7 +4965,17 @@ function doActivate(cardId){
 
   if(runActive(card, ctx)){
     if(u) u.skillUsed=true;
-    closeModal(); render(); return;
+    /* Some effects (peek_top and anything else that hands the decision to
+       askChoice/pickFromZones/pickCards) return true the instant the chooser
+       opens - the pick itself hasn't happened yet. Those choosers repaint
+       the SAME #modal div this Activate sheet is showing, so closing it here
+       unconditionally used to slam their prompt shut before the player ever
+       saw it, which read as "the game chose for me". Only close it when no
+       modal-based chooser is currently waiting on an answer; pickSquare
+       doesn't use #modal at all (it highlights the board), so it still
+       needs the modal closed to let board clicks through. */
+    if(!(ACHOICE || PICKZ || PICKN || PICKCARD_CB)) closeModal();
+    render(); return;
   }
   if(SIMULATED.has(card.fx)){
     // the handful the engine really runs
@@ -4802,6 +5012,10 @@ function renderSelBar(){
   }
   let mid="";
   const u = G.sel && G.board[G.sel.r][G.sel.c];
+  // Read-only view of an opponent's face-up Unit (see cellClick). Only
+  // shown when nothing of your own is selected, so your own selection
+  // always wins the one mid-panel slot they now share.
+  const vu = !u && G.viewSel && G.board[G.viewSel.r][G.viewSel.c];
   if(u && u.fd){
     const mineFD = u.own===G.cur;
     const flippable = mineFD && canFlip(G.sel.r,G.sel.c,G.cur);
@@ -4818,6 +5032,11 @@ function renderSelBar(){
     mid = `<span class="who2">${esc(u.cards.map(c=>c.name).join(" + "))}</span>
       <span class="hint">${dieTxt(u)}${m?`&nbsp; ${m>0?"+":""}${m} from auras`:""}${u.tapped?" · tapped":""}${u.sick?" · morph sick":""}${u.skillUsed?" · Skill used":""}</span>` +
       u.cards.map(c=>`<button class="bigbtn skill" onclick="skillSheet(BY_ID['${c.id}'],{r:${G.sel.r},c:${G.sel.c}})">Skill</button>`).join("");
+  } else if(vu && !vu.fd && vu.own!==G.cur){
+    const m=modAt(G.viewSel.r,G.viewSel.c,vu);
+    mid = `<span class="who2">${esc(G.P[vu.own].name)}'s ${esc(vu.cards.map(c=>c.name).join(" + "))} — view only</span>
+      <span class="hint">${dieTxt(vu)}${m?`&nbsp; ${m>0?"+":""}${m} from auras`:""}${vu.tapped?" · tapped":""}${vu.sick?" · morph sick":""}</span>` +
+      vu.cards.map(c=>`<button class="bigbtn skill" onclick="skillSheet(BY_ID['${c.id}'],{r:${G.viewSel.r},c:${G.viewSel.c}})">Info</button>`).join("");
   } else {
     mid = `<span class="hint">${hints[G.phase]||""}</span>`;
   }
@@ -4825,7 +5044,7 @@ function renderSelBar(){
     bar.innerHTML =
       `<span class="phaseNow">${PH[G.phase]}</span>` +
       `<span class="who2">${esc(G.P[1].name)} vs ${esc(G.P[2].name)}</span>` +
-      `<span class="hint">autoplay — P${G.cur} is thinking. Watch the log</span>` +
+      `<span class="hint">spectate mode — P${G.cur} is thinking. Watch the log</span>` +
       `<span class="spacer"></span>` +
       `<button class="bigbtn phase" onclick="stopAuto()">Stop</button>`;
     return;
@@ -4916,6 +5135,7 @@ function render(){
   if(G.strikes) G.strikes=G.strikes.filter(x=>Date.now()-x.at<800);
   if(G.deaths) G.deaths=G.deaths.filter(x=>Date.now()-x.at<1200);   // x.at is already delayed
   if(G.parries) G.parries=G.parries.filter(x=>Date.now()-x.at<1400);
+  if(G.shuffles) G.shuffles=G.shuffles.filter(x=>Date.now()-x.at<1300);
   const PH=["Draw","Recruitment","Battle","End"];
   setTurnSkin();   // board frame follows the turn, every frame, no drift
   $("whoTurn").textContent=`P${G.cur} · ${G.P[G.cur].name} · turn ${G.turn}`;
@@ -4929,6 +5149,7 @@ function render(){
     const d=document.createElement("div");
     d.className=`sq z-${z.kind} ${z.own===1?"p1side":"p2side"}`;
     if(G.sel&&G.sel.r===r&&G.sel.c===c) d.classList.add("sel");
+    if(G.viewSel&&G.viewSel.r===r&&G.viewSel.c===c) d.classList.add("sel");
     const a=acts.find(x=>x.r===r&&x.c===c);
     // NOTE: only set the class here. The label is appended further down,
     // AFTER d.innerHTML is written - otherwise that assignment wipes it.
@@ -5007,7 +5228,7 @@ function render(){
 }
 function renderHand(){
   const h=$("hand"); h.innerHTML="";
-  if(AUTOPLAY){ h.innerHTML=`<div class="tag">autoplay — ${esc(G.P[G.cur].name)} is taking its turn. Hands stay hidden, same as at a real table.</div>`; return; }
+  if(AUTOPLAY){ h.innerHTML=`<div class="tag">spectate mode — ${esc(G.P[G.cur].name)} is taking its turn. Hands stay hidden, same as at a real table.</div>`; return; }
   if(NPC_ON&&G.cur===2){ h.innerHTML='<div class="tag">opponent is thinking…</div>'; return; }
   const P=G.P[G.cur];
   for(const card of P.hand){
@@ -5177,6 +5398,44 @@ $("logTab").onclick=toggleLog;
 window.toggleLog=toggleLog;
 
 addEventListener("resize",()=>{ if(SCREEN==="game"){ fitBoard(); render(); } });
+
+/* ---- forced view toggle: landscape / portrait / auto --------------
+   Built because itch.io's own embed can box the game into a fixed,
+   always-landscape-shaped frame no matter how a phone is actually held,
+   so relying only on the real device orientation left players stuck.
+   This lets a player force either layout directly, in the game itself,
+   regardless of what the embed or the device reports. "Auto" falls back
+   to the original @media-driven behaviour untouched (see the VIEW
+   OVERRIDE block in <style>). Remembered per-browser so it does not
+   reset every time the game is reopened. */
+let VIEW_PREF="auto";
+try{ VIEW_PREF=localStorage.getItem("toa_view")||"auto"; }catch(e){}
+function applyView(){
+  const html=document.documentElement;
+  let lp,pp;
+  if(VIEW_PREF==="landscape"){ lp=true; pp=false; }
+  else if(VIEW_PREF==="portrait"){ lp=false; pp=true; }
+  else {
+    // auto: identical conditions the original @media rules gated on
+    lp = matchMedia("(orientation:landscape) and (max-height:600px)").matches;
+    pp = matchMedia("(max-width:820px)").matches;
+  }
+  html.toggleAttribute("data-lp",lp);
+  html.toggleAttribute("data-pp",pp);
+  const b=$("btnView");
+  if(b) b.textContent="View: "+(VIEW_PREF==="landscape"?"Landscape":VIEW_PREF==="portrait"?"Portrait":"Auto");
+  if(SCREEN==="game"){ fitBoard(); fitHand(); render(); }
+}
+function cycleView(){
+  VIEW_PREF = VIEW_PREF==="auto" ? "landscape" : VIEW_PREF==="landscape" ? "portrait" : "auto";
+  try{ localStorage.setItem("toa_view",VIEW_PREF); }catch(e){}
+  applyView();
+}
+if($("btnView")) $("btnView").onclick=cycleView;
+window.applyView=applyView;
+addEventListener("resize",applyView);
+addEventListener("orientationchange",applyView);
+applyView();
 </script>
 </body>
 </html>
